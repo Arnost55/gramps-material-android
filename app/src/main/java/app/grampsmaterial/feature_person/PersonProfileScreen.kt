@@ -27,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import app.grampsmaterial.core_network.models.displayName
 import app.grampsmaterial.core_network.models.lifeYears
 import app.grampsmaterial.feature_person.viewmodel.PersonProfileViewModel
+import coil3.compose.AsyncImage
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
+import coil3.request.ImageRequest
 
 @Composable
 fun PersonProfileScreen(
@@ -93,7 +99,31 @@ fun PersonProfileScreen(
                         Text(listOfNotNull(event.date, event.type, event.description, event.place_name ?: event.place).joinToString(" · "))
                     }
                 }
-                Section("Media") { Text(if (person.media_list.isEmpty()) "No media was returned for this person." else "${person.media_list.size} media item(s) available.") }
+                Section("Media") {
+                    if (state.media.isEmpty()) Text("No media was returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else {
+                        state.media.chunked(3).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                row.forEach { media ->
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(media.thumbnailUrl)
+                                            .httpHeaders(
+                                                NetworkHeaders.Builder()
+                                                    .set("Authorization", "Bearer ${media.accessToken}")
+                                                    .build()
+                                            )
+                                            .build(),
+                                        contentDescription = "Media item",
+                                        modifier = Modifier.size(96.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                        if (person.media_list.size > state.media.size) Text("Showing the first ${state.media.size} items.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Section("Sources, citations & notes") {
                     if (state.research.isEmpty()) Text("No research records were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else state.research.forEach { item ->

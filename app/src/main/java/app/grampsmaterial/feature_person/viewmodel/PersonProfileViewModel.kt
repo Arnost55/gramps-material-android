@@ -41,6 +41,13 @@ class PersonProfileViewModel @Inject constructor(
                 val isBookmarked = runCatching { personRepository.getPeopleBookmarks().contains(person.handle) }.getOrDefault(false)
                 val timeline = runCatching { personRepository.getPersonTimeline(person.handle) }.getOrDefault(emptyList())
                 val research = runCatching { loadResearch(person) }.getOrDefault(emptyList())
+                val media = person.media_list.take(12).map { ref ->
+                    MediaPreview(
+                        handle = ref.ref,
+                        thumbnailUrl = "${sessionManager.serverUrlFlow.first().trimEnd('/')}/api/media/${ref.ref}/thumbnail/256",
+                        accessToken = sessionManager.getAccessToken().orEmpty()
+                    )
+                }
                 val relationshipToHome = sessionManager.homePersonHandleFlow.first()
                     .takeIf { it.isNotBlank() && it != person.handle }
                     ?.let { home -> runCatching { personRepository.getRelationship(person.handle, home).relationship_string }.getOrNull() }
@@ -51,7 +58,8 @@ class PersonProfileViewModel @Inject constructor(
                     isBookmarked = isBookmarked,
                     relationshipToHome = relationshipToHome,
                     timeline = timeline,
-                    research = research
+                    research = research,
+                    media = media
                 )
             } catch (_: Exception) {
                 _uiState.update {
@@ -123,6 +131,8 @@ class PersonProfileViewModel @Inject constructor(
 
     data class ResearchEntry(val title: String, val detail: String?, val kind: String)
 
+    data class MediaPreview(val handle: String, val thumbnailUrl: String, val accessToken: String)
+
     data class Relationships(
         val parents: List<RelatedPerson> = emptyList(),
         val partners: List<RelatedPerson> = emptyList(),
@@ -140,6 +150,7 @@ class PersonProfileViewModel @Inject constructor(
         val relationshipToHome: String? = null,
         val timeline: List<TimelineEvent> = emptyList(),
         val research: List<ResearchEntry> = emptyList(),
+        val media: List<MediaPreview> = emptyList(),
         val notice: String? = null
     )
 }
