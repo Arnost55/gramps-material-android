@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.grampsmaterial.core_network.models.displayName
+import app.grampsmaterial.core_network.models.lifeYears
 import app.grampsmaterial.core_ui.theme.GrampsMaterialTheme
 import app.grampsmaterial.feature_search.viewmodel.SearchViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -146,6 +148,8 @@ fun SearchScreen(
                     .weight(1f)
             ) {
                 items(uiState.results) { result ->
+                    val person = result.`object`
+                    val displayName = person?.displayName() ?: "Unknown person"
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -166,7 +170,7 @@ fun SearchScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = result.`object`?.primary_name?.first_name?.take(1) ?: "?",
+                                    text = displayName.take(1).uppercase(),
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -175,24 +179,10 @@ fun SearchScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             
                             Column {
-                                Text(
-                                    text = result.`object`?.primary_name?.first_name ?: "Unknown",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = result.`object`?.primary_name?.surname_list?.joinToString(" ") ?: "",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                if (result.`object`?.birthDate != null) {
+                                Text(displayName, style = MaterialTheme.typography.titleMedium)
+                                person?.lifeYears()?.let { years ->
                                     Text(
-                                        text = "Born: ${result.`object`?.birthDate}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (result.`object`?.deathDate != null) {
-                                    Text(
-                                        text = "Died: ${result.`object`?.deathDate}",
+                                        years,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

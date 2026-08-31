@@ -130,8 +130,9 @@ data class GrampsPerson(
     val private: Boolean = false,
     val profile: PersonProfile? = null
 ) {
+    // Event references are opaque handles, never user-facing dates.
     val birthDate: String?
-        get() = profile?.birth?.date ?: event_ref_list.firstOrNull()?.ref // fallback
+        get() = profile?.birth?.date
     val deathDate: String?
         get() = profile?.death?.date
 }
