@@ -6,6 +6,7 @@ import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.AuthRepository
 import app.grampsmaterial.core_network.GrampsServer
 import app.grampsmaterial.core_network.ServerReadiness
+import app.grampsmaterial.core_sync.PeopleCacheScheduler
 import app.grampsmaterial.core_network.models.TokenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val peopleCacheScheduler: PeopleCacheScheduler
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -62,6 +64,7 @@ class AuthViewModel @Inject constructor(
                 sessionManager.saveUsername(username.trim())
                 authRepository.saveTokens(token.access_token, token.refresh_token)
                 sessionManager.setConnected(true)
+                peopleCacheScheduler.enqueueRefresh()
                 _uiState.update { it.copy(isLoading = false) }
                 _authSuccess.value = true
             } catch (_: HttpException) {

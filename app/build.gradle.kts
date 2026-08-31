@@ -69,6 +69,9 @@ dependencies {
     // Datastore for preferences
     implementation("androidx.datastore:datastore-preferences:1.2.1")
 
+    // Persistent background cache refresh
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
+
     // Encrypted Storage
     implementation("androidx.security:security-crypto:1.1.0")
 

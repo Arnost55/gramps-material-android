@@ -3,6 +3,7 @@ package app.grampsmaterial.core_ui.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_database.SessionManager
+import app.grampsmaterial.core_sync.PeopleCacheScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val peopleCacheScheduler: PeopleCacheScheduler
 ) : ViewModel() {
     private val _state = MutableStateFlow(SessionState())
     val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -29,7 +31,10 @@ class SessionViewModel @Inject constructor(
                     isConnected = isConnected && !sessionManager.getAccessToken().isNullOrBlank(),
                     hasSelectedTree = selectedTreeId.isNotBlank()
                 )
-            }.collect { _state.value = it }
+            }.collect { state ->
+                _state.value = state
+                if (state.isConnected) peopleCacheScheduler.enqueueRefresh()
+            }
         }
     }
 
