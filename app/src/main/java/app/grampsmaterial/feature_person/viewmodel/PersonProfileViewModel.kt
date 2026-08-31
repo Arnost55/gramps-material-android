@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.PersonRepository
 import app.grampsmaterial.core_network.models.GrampsPerson
+import app.grampsmaterial.core_network.models.TimelineEvent
 import app.grampsmaterial.core_network.models.displayName
 import app.grampsmaterial.core_network.models.lifeYears
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,13 +38,36 @@ class PersonProfileViewModel @Inject constructor(
                 val person = personRepository.getPersonFromNetwork(personHandle)
                 val isHomePerson = sessionManager.homePersonHandleFlow.first() == person.handle
                 val relationships = loadRelationships(person)
-                _uiState.value = UiState(person = person, relationships = relationships, isHomePerson = isHomePerson)
+                val isBookmarked = runCatching { personRepository.getPeopleBookmarks().contains(person.handle) }.getOrDefault(false)
+                val timeline = runCatching { personRepository.getPersonTimeline(person.handle) }.getOrDefault(emptyList())
+                val relationshipToHome = sessionManager.homePersonHandleFlow.first()
+                    .takeIf { it.isNotBlank() && it != person.handle }
+                    ?.let { home -> runCatching { personRepository.getRelationship(person.handle, home).relationship_string }.getOrNull() }
+                _uiState.value = UiState(
+                    person = person,
+                    relationships = relationships,
+                    isHomePerson = isHomePerson,
+                    isBookmarked = isBookmarked,
+                    relationshipToHome = relationshipToHome,
+                    timeline = timeline
+                )
             } catch (_: Exception) {
                 _uiState.update {
                     if (it.person != null) it.copy(isLoading = false, isStale = true)
                     else it.copy(isLoading = false, error = "Unable to load this person. Check your connection and try again.")
                 }
             }
+        }
+    }
+
+    fun toggleBookmark() = viewModelScope.launch {
+        val person = _uiState.value.person ?: return@launch
+        val target = !_uiState.value.isBookmarked
+        try {
+            personRepository.setPersonBookmarked(person.handle, target)
+            _uiState.update { it.copy(isBookmarked = target, notice = null) }
+        } catch (_: Exception) {
+            _uiState.update { it.copy(notice = "Unable to update the server bookmark.") }
         }
     }
 
@@ -81,6 +105,10 @@ class PersonProfileViewModel @Inject constructor(
         val error: String? = null,
         val person: GrampsPerson? = null,
         val relationships: Relationships = Relationships(),
-        val isHomePerson: Boolean = false
+        val isHomePerson: Boolean = false,
+        val isBookmarked: Boolean = false,
+        val relationshipToHome: String? = null,
+        val timeline: List<TimelineEvent> = emptyList(),
+        val notice: String? = null
     )
 }

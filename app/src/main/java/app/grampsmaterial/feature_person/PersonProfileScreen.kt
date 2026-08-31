@@ -69,6 +69,13 @@ fun PersonProfileScreen(
                         } else {
                             Button(onClick = viewModel::setAsHomePerson) { Text("Set as home person") }
                         }
+                        Button(onClick = viewModel::toggleBookmark) {
+                            Text(if (state.isBookmarked) "Remove bookmark" else "Bookmark person")
+                        }
+                        state.relationshipToHome?.let { relationship ->
+                            Text("Home person: $relationship", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                        }
+                        state.notice?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error) }
                         if (state.isStale) Text("Offline — showing cached data", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
@@ -79,6 +86,12 @@ fun PersonProfileScreen(
                     val events = listOfNotNull(person.profile?.birth, person.profile?.death) + person.profile?.events.orEmpty()
                     if (events.isEmpty()) Text("No events were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else events.forEach { event -> Text(listOfNotNull(event.type, event.date, event.place_name ?: event.place).joinToString(" · ")) }
+                }
+                Section("Timeline") {
+                    if (state.timeline.isEmpty()) Text("No timeline events were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else state.timeline.forEach { event ->
+                        Text(listOfNotNull(event.date, event.type, event.description, event.place_name ?: event.place).joinToString(" · "))
+                    }
                 }
                 Section("Media") { Text(if (person.media_list.isEmpty()) "No media was returned for this person." else "${person.media_list.size} media item(s) available.") }
                 Section("Sources & citations") { Text(if (person.citation_list.isEmpty()) "No citations were returned for this person." else "${person.citation_list.size} citation(s) available.") }

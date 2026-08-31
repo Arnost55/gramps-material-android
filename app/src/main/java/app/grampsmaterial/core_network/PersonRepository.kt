@@ -55,6 +55,18 @@ class PersonRepository @Inject constructor(
 
     suspend fun getAllCachedFamilies(): List<GrampsFamily> = dbProvider.familyDao.getAllFamilies()
 
+    suspend fun getPeopleBookmarks(): Set<String> = api().getPeopleBookmarks().toSet()
+
+    suspend fun setPersonBookmarked(handle: String, bookmarked: Boolean) {
+        val response = if (bookmarked) api().addPeopleBookmark(handle) else api().removePeopleBookmark(handle)
+        if (!response.isSuccessful) throw IllegalStateException("Could not update bookmark")
+    }
+
+    suspend fun getRelationship(firstHandle: String, secondHandle: String) =
+        api().getRelationship(firstHandle, secondHandle)
+
+    suspend fun getPersonTimeline(handle: String) = api().getPersonTimeline(handle)
+
     suspend fun searchPeopleFromNetwork(query: String): List<SearchResult> {
         val results = api().search(
             query = query,

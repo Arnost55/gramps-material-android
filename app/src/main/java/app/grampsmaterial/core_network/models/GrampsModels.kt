@@ -157,6 +157,24 @@ data class ChildRef(
 )
 
 @Serializable
+data class Relationship(
+    val relationship_string: String? = null,
+    val distance_common_origin: Int? = null,
+    val distance_common_other: Int? = null
+)
+
+@Serializable
+data class TimelineEvent(
+    val type: String? = null,
+    val date: String? = null,
+    val description: String? = null,
+    val place: String? = null,
+    val place_name: String? = null,
+    val role: String? = null,
+    val person: PersonProfile? = null
+)
+
+@Serializable
 data class SearchResult(
     val handle: String,
     val object_type: String,

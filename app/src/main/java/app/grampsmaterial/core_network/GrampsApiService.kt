@@ -35,6 +35,28 @@ interface GrampsApiService {
         @Query("profile") profile: String = "self"
     ): List<GrampsPerson>
 
+    @GET("api/bookmarks/people")
+    suspend fun getPeopleBookmarks(): List<String>
+
+    @PUT("api/bookmarks/people/{handle}")
+    suspend fun addPeopleBookmark(@Path("handle") handle: String): Response<Unit>
+
+    @DELETE("api/bookmarks/people/{handle}")
+    suspend fun removePeopleBookmark(@Path("handle") handle: String): Response<Unit>
+
+    @GET("api/relations/{handle1}/{handle2}")
+    suspend fun getRelationship(
+        @Path("handle1") handle1: String,
+        @Path("handle2") handle2: String
+    ): Relationship
+
+    @GET("api/people/{handle}/timeline")
+    suspend fun getPersonTimeline(
+        @Path("handle") handle: String,
+        @Query("page") page: Int = 1,
+        @Query("pagesize") pageSize: Int = 100
+    ): List<TimelineEvent>
+
     @GET("api/people/{handle}")
     suspend fun getPerson(
         @Path("handle") handle: String,
