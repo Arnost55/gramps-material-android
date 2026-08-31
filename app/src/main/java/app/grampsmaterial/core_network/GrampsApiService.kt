@@ -19,6 +19,12 @@ interface GrampsApiService {
     @GET("api/trees/")
     suspend fun getTrees(): List<GrampsTree>
 
+    @PUT("api/users/-/")
+    suspend fun selectCurrentUserTree(@Body request: TreeSelectionRequest): Response<Unit>
+
+    @POST("api/token/refresh/")
+    suspend fun refreshToken(@Header("Authorization") refreshAuthorization: String): Response<TokenResponse>
+
     @GET("api/search/")
     suspend fun search(
         @Query("query") query: String,

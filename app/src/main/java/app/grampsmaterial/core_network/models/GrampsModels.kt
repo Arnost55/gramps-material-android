@@ -16,6 +16,9 @@ data class TokenRequest(
     val password: String
 )
 
+@Serializable
+data class TreeSelectionRequest(val tree: String)
+
 @Entity(tableName = "trees")
 @Serializable
 data class GrampsTree(

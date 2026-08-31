@@ -63,7 +63,8 @@ class GrampsClient(private val sessionManager: SessionManager) {
 
         val authInterceptor = Interceptor { chain ->
             val request = chain.request()
-            val isTokenRequest = request.url.encodedPath.endsWith("/api/token/")
+            val isTokenRequest = request.url.encodedPath.endsWith("/api/token/") ||
+                request.url.encodedPath.endsWith("/api/token/refresh/")
             val builder = request.newBuilder()
             if (!isTokenRequest) {
                 sessionManager.getAccessToken()?.takeIf(String::isNotBlank)?.let { token ->
