@@ -57,6 +57,24 @@ interface GrampsApiService {
         @Query("pagesize") pageSize: Int = 100
     ): List<TimelineEvent>
 
+    @GET("api/citations/{handle}")
+    suspend fun getCitation(
+        @Path("handle") handle: String,
+        @Query("profile") profile: String = "all"
+    ): GrampsCitation
+
+    @GET("api/sources/{handle}")
+    suspend fun getSource(
+        @Path("handle") handle: String,
+        @Query("profile") profile: String = "all"
+    ): GrampsSource
+
+    @GET("api/notes/{handle}")
+    suspend fun getNote(
+        @Path("handle") handle: String,
+        @Query("profile") profile: String = "all"
+    ): GrampsNote
+
     @GET("api/people/{handle}")
     suspend fun getPerson(
         @Path("handle") handle: String,

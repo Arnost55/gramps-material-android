@@ -40,6 +40,7 @@ class PersonProfileViewModel @Inject constructor(
                 val relationships = loadRelationships(person)
                 val isBookmarked = runCatching { personRepository.getPeopleBookmarks().contains(person.handle) }.getOrDefault(false)
                 val timeline = runCatching { personRepository.getPersonTimeline(person.handle) }.getOrDefault(emptyList())
+                val research = runCatching { loadResearch(person) }.getOrDefault(emptyList())
                 val relationshipToHome = sessionManager.homePersonHandleFlow.first()
                     .takeIf { it.isNotBlank() && it != person.handle }
                     ?.let { home -> runCatching { personRepository.getRelationship(person.handle, home).relationship_string }.getOrNull() }
@@ -49,7 +50,8 @@ class PersonProfileViewModel @Inject constructor(
                     isHomePerson = isHomePerson,
                     isBookmarked = isBookmarked,
                     relationshipToHome = relationshipToHome,
-                    timeline = timeline
+                    timeline = timeline,
+                    research = research
                 )
             } catch (_: Exception) {
                 _uiState.update {
@@ -77,6 +79,32 @@ class PersonProfileViewModel @Inject constructor(
         _uiState.update { it.copy(isHomePerson = true) }
     }
 
+    private suspend fun loadResearch(person: GrampsPerson): List<ResearchEntry> {
+        val citations = person.citation_list.mapNotNull { handle ->
+            runCatching { personRepository.getCitation(handle) }.getOrNull()
+        }
+        val citationEntries = citations.map { citation ->
+            val source = citation.source ?: citation.source_handle?.let { handle ->
+                runCatching { personRepository.getSource(handle) }.getOrNull()
+            }
+            ResearchEntry(
+                title = source?.title ?: source?.abbrev ?: "Citation",
+                detail = listOfNotNull(source?.author, citation.page?.let { "p. $it" }).joinToString(" · ").ifBlank { null },
+                kind = "Citation"
+            )
+        }
+        val noteEntries = person.note_list.mapNotNull { handle ->
+            runCatching { personRepository.getNote(handle) }.getOrNull()
+        }.map { note ->
+            ResearchEntry(
+                title = "Research note",
+                detail = (note.text ?: note.styledtext)?.takeIf(String::isNotBlank),
+                kind = "Note"
+            )
+        }
+        return citationEntries + noteEntries
+    }
+
     private suspend fun loadRelationships(person: GrampsPerson): Relationships {
         val parentFamilies = person.parent_family_list.map { personRepository.getFamilyFromNetwork(it) }
         val partnerFamilies = person.family_list.map { personRepository.getFamilyFromNetwork(it) }
@@ -92,6 +120,8 @@ class PersonProfileViewModel @Inject constructor(
     }
 
     data class RelatedPerson(val handle: String, val displayName: String, val lifeYears: String?)
+
+    data class ResearchEntry(val title: String, val detail: String?, val kind: String)
 
     data class Relationships(
         val parents: List<RelatedPerson> = emptyList(),
@@ -109,6 +139,7 @@ class PersonProfileViewModel @Inject constructor(
         val isBookmarked: Boolean = false,
         val relationshipToHome: String? = null,
         val timeline: List<TimelineEvent> = emptyList(),
+        val research: List<ResearchEntry> = emptyList(),
         val notice: String? = null
     )
 }

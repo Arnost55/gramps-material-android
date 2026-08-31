@@ -67,6 +67,12 @@ class PersonRepository @Inject constructor(
 
     suspend fun getPersonTimeline(handle: String) = api().getPersonTimeline(handle)
 
+    suspend fun getCitation(handle: String) = api().getCitation(handle)
+
+    suspend fun getSource(handle: String) = api().getSource(handle)
+
+    suspend fun getNote(handle: String) = api().getNote(handle)
+
     suspend fun searchPeopleFromNetwork(query: String): List<SearchResult> {
         val results = api().search(
             query = query,

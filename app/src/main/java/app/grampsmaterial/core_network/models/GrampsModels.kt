@@ -157,6 +157,29 @@ data class ChildRef(
 )
 
 @Serializable
+data class GrampsSource(
+    val handle: String,
+    val title: String? = null,
+    val author: String? = null,
+    val abbrev: String? = null
+)
+
+@Serializable
+data class GrampsCitation(
+    val handle: String,
+    val page: String? = null,
+    val source_handle: String? = null,
+    val source: GrampsSource? = null
+)
+
+@Serializable
+data class GrampsNote(
+    val handle: String,
+    val text: String? = null,
+    val styledtext: String? = null
+)
+
+@Serializable
 data class Relationship(
     val relationship_string: String? = null,
     val distance_common_origin: Int? = null,

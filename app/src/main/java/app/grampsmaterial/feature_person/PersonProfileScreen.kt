@@ -94,8 +94,14 @@ fun PersonProfileScreen(
                     }
                 }
                 Section("Media") { Text(if (person.media_list.isEmpty()) "No media was returned for this person." else "${person.media_list.size} media item(s) available.") }
-                Section("Sources & citations") { Text(if (person.citation_list.isEmpty()) "No citations were returned for this person." else "${person.citation_list.size} citation(s) available.") }
-                Section("Notes") { Text(if (person.note_list.isEmpty()) "No notes were returned for this person." else "${person.note_list.size} note(s) available.") }
+                Section("Sources, citations & notes") {
+                    if (state.research.isEmpty()) Text("No research records were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else state.research.forEach { item ->
+                        Text(item.kind, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(item.title, style = MaterialTheme.typography.bodyLarge)
+                        item.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                }
             }
         }
     }
