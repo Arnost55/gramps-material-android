@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -63,6 +64,11 @@ fun PersonProfileScreen(
                     Column {
                         Text(person.displayName(), style = MaterialTheme.typography.headlineSmall)
                         person.lifeYears()?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        if (state.isHomePerson) {
+                            Text("Home person", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Button(onClick = viewModel::setAsHomePerson) { Text("Set as home person") }
+                        }
                         if (state.isStale) Text("Offline — showing cached data", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }

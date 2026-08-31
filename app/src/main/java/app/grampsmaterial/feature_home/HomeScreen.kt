@@ -20,6 +20,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +41,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val monthBirthdays = uiState.birthdays.filter { it.month == uiState.birthdayMonth }
+    val monthName = java.time.Month.of(uiState.birthdayMonth).name.lowercase().replaceFirstChar(Char::titlecase)
 
     Column(
         modifier = modifier
@@ -108,6 +111,20 @@ fun HomeScreen(
             )
         }
 
+        uiState.homePerson?.let { person ->
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth().clickable { onPersonSelected(person.handle) },
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Home person", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(person.displayName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    person.lifeYears?.let { Text(it, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                    Text("Opens your profile and anchors the ancestor tree", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+        }
+
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -139,24 +156,28 @@ fun HomeScreen(
             )
             StatCard(
                 modifier = Modifier.weight(1f),
-                label = "Birthdays this month",
-                value = uiState.birthdays.size.toString(),
+                label = "Birthdays in $monthName",
+                value = monthBirthdays.size.toString(),
                 icon = Icons.Outlined.AccountTree
             )
         }
 
-        if (uiState.birthdays.isNotEmpty()) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-            ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Birthdays this month", style = MaterialTheme.typography.titleMedium)
-                    uiState.birthdays.take(3).forEach { birthday ->
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Birthdays", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { viewModel.setBirthdayMonth(if (uiState.birthdayMonth == 1) 12 else uiState.birthdayMonth - 1) }) { Text("‹") }
+                    Text(monthName, style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = { viewModel.setBirthdayMonth(if (uiState.birthdayMonth == 12) 1 else uiState.birthdayMonth + 1) }) { Text("›") }
+                }
+                if (monthBirthdays.isEmpty()) {
+                    Text("No known birthdays in $monthName.", color = MaterialTheme.colorScheme.onTertiaryContainer)
+                } else {
+                    monthBirthdays.forEach { birthday ->
                         Text("${birthday.displayName} · ${birthday.date}", color = MaterialTheme.colorScheme.onTertiaryContainer)
-                    }
-                    if (uiState.birthdays.size > 3) {
-                        Text("+${uiState.birthdays.size - 3} more", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }

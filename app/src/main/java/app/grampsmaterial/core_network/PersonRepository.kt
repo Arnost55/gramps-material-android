@@ -49,11 +49,26 @@ class PersonRepository @Inject constructor(
         return results
     }
 
-    suspend fun loadFirstPeoplePage(): List<GrampsPerson> {
-        val people = api().getPeople()
-        dbProvider.personDao.insertAllPeople(*people.toTypedArray())
+    /**
+     * Loads every page exposed by Gramps Web. The API does not include a total in this response,
+     * so a short page (or a page that adds no new handles) terminates pagination safely.
+     */
+    suspend fun loadAllPeopleFromNetwork(): List<GrampsPerson> {
+        val pageSize = 50
+        val allPeople = linkedMapOf<String, GrampsPerson>()
+        var page = 1
+        while (true) {
+            val response = api().getPeople(page = page, pageSize = pageSize, profile = "self")
+            val added = response.count { person -> allPeople.put(person.handle, person) == null }
+            if (response.isEmpty() || response.size < pageSize || added == 0) break
+            page++
+        }
+        val people = allPeople.values.toList()
+        if (people.isNotEmpty()) dbProvider.personDao.insertAllPeople(*people.toTypedArray())
         return people
     }
+
+    suspend fun loadFirstPeoplePage(): List<GrampsPerson> = loadAllPeopleFromNetwork()
 
     suspend fun getCachedPerson(handle: String): GrampsPerson? {
         return dbProvider.personDao.getPersonByHandle(handle)

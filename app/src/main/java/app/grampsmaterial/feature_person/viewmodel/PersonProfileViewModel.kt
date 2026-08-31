@@ -35,11 +35,9 @@ class PersonProfileViewModel @Inject constructor(
             if (cached != null) _uiState.update { it.copy(person = cached, isLoading = true, isStale = true) }
             try {
                 val person = personRepository.getPersonFromNetwork(personHandle)
-                if (sessionManager.homePersonHandleFlow.first().isBlank()) {
-                    sessionManager.saveHomePersonHandle(person.handle)
-                }
+                val isHomePerson = sessionManager.homePersonHandleFlow.first() == person.handle
                 val relationships = loadRelationships(person)
-                _uiState.value = UiState(person = person, relationships = relationships)
+                _uiState.value = UiState(person = person, relationships = relationships, isHomePerson = isHomePerson)
             } catch (_: Exception) {
                 _uiState.update {
                     if (it.person != null) it.copy(isLoading = false, isStale = true)
@@ -47,6 +45,12 @@ class PersonProfileViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun setAsHomePerson() = viewModelScope.launch {
+        val person = _uiState.value.person ?: return@launch
+        sessionManager.saveHomePersonHandle(person.handle)
+        _uiState.update { it.copy(isHomePerson = true) }
     }
 
     private suspend fun loadRelationships(person: GrampsPerson): Relationships {
@@ -76,6 +80,7 @@ class PersonProfileViewModel @Inject constructor(
         val isStale: Boolean = false,
         val error: String? = null,
         val person: GrampsPerson? = null,
-        val relationships: Relationships = Relationships()
+        val relationships: Relationships = Relationships(),
+        val isHomePerson: Boolean = false
     )
 }

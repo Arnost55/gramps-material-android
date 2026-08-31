@@ -61,10 +61,33 @@ open class SearchViewModel @Inject constructor(
         }
     }
 
-    open fun clearSearch() {
+    /** Shows the full people list when no search term is supplied. */
+    open fun loadAllPeople() {
         searchJob?.cancel()
-        _uiState.value = UiState()
+        searchJob = viewModelScope.launch {
+            _uiState.value = UiState(isLoading = true)
+            try {
+                val people = personRepository.loadAllPeopleFromNetwork()
+                _uiState.value = UiState(
+                    results = people.map { person ->
+                        SearchResult(handle = person.handle, object_type = "person", `object` = person)
+                    }
+                )
+            } catch (e: Exception) {
+                coroutineContext.ensureActive()
+                val cached = personRepository.getAllCachedPeople()
+                _uiState.value = UiState(
+                    results = cached.map { person ->
+                        SearchResult(handle = person.handle, object_type = "person", `object` = person)
+                    },
+                    isOffline = true,
+                    error = if (cached.isEmpty()) "Offline and no people are cached on this device." else null
+                )
+            }
+        }
     }
+
+    open fun clearSearch() = loadAllPeople()
 
     data class UiState(
         val isLoading: Boolean = false,
