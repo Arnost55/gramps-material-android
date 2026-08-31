@@ -1,72 +1,65 @@
 # Gramps Material
 
-An **unofficial, native Android client for Gramps Web**, built with Kotlin, Jetpack Compose and Material 3.
+**Gramps Material** is an unofficial, native Android client for Gramps Web, built with Kotlin, Jetpack Compose, and Material 3. It is not affiliated with the Gramps project.
 
-> Early scaffold — not ready for real family-tree data yet.
+## Current features
 
-## Why
+- Connect to a Gramps Web server and verify `GET /ready`
+- Token-based sign-in with encrypted token storage
+- Tree selection persisted in DataStore
+- Real people search, person profiles, and relationship navigation
+- Recently viewed people and cached people available offline
+- Interactive, cycle-safe ancestor tree with pan, pinch zoom, tap-to-open, and 2–6 generations
+- Light, dark, dynamic-color, and AMOLED appearance options
+- Local cache clearing and logout
 
-Gramps Web is a capable genealogy backend and web app. This project explores a phone-first Android experience with native navigation, Material You, a touch-friendly family tree, and eventually offline caching.
+## Current limitations
 
-## MVP
+- Requires a compatible, authenticated Gramps Web server.
+- Media, sources, citations, places, events beyond the profile response, favorites, and editing are not complete.
+- Offline mode is read-only and only supports already-cached people/search results.
+- No device validation is claimed unless recorded separately for a connected device.
 
-- [x] Material 3 / Material You shell
-- [x] Server URL setup screen
-- [x] Home / Search / Tree navigation
-- [x] API boundary separated from UI
-- [ ] Real Gramps Web authentication
-- [ ] Server capability/version check
-- [ ] Person search
-- [ ] Person profile
-- [ ] Family relationships
-- [ ] Interactive ancestor/descendant tree
-- [ ] Media, places, sources and citations
-- [ ] Add/edit people
-- [ ] Secure credential storage
-- [ ] Room offline cache
-- [ ] Multiple Gramps Web servers / trees
+## Build
+
+Requirements:
+
+- JDK 17
+- Android SDK 37
+- Android Studio compatible with the checked-in Android Gradle Plugin
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew test
+./gradlew :app:lintDebug
+```
+
+On Windows, use `gradlew.bat` instead. Set `JAVA_HOME` to JDK 17 if Gradle cannot find Java.
+
+## Connection
+
+1. Launch the app and choose **Connect to Gramps Web**.
+2. Enter the server URL, username, and password.
+3. Use **Test connection** to validate the server readiness endpoint.
+4. HTTPS is required by default. Enable **Allow insecure local server** only for a trusted local HTTP instance.
+5. Sign in and select a tree.
+
+Passwords are not persisted. Access and refresh tokens are stored using AndroidX `EncryptedSharedPreferences` backed by Android Keystore.
 
 ## Architecture
 
 ```text
-Compose UI
-   ↓
-ViewModels
-   ↓
-Repositories
-   ├── Gramps Web REST API
-   └── Room cache (planned)
+Compose UI → ViewModels → Repositories → Gramps Web / Room
 ```
 
-The Gramps Web server remains the source of truth. The Android app should not invent a second genealogy data model or rely on GEDCOM syncing for normal use.
+- `core_network`: Retrofit/OkHttp Gramps Web client and repositories
+- `core_database`: Room cache, recent people, and DataStore/session state
+- `core_ui`: theme and Navigation Compose
+- `feature_*`: authentication, home, search, person, tree, and settings
 
-## Gramps Web API
+## Privacy and security
 
-Gramps Web exposes a REST API that can query and modify a Gramps family tree. An authenticated Gramps Web instance also exposes interactive API documentation at `/api/swagger-ui`.
-
-Authentication is deliberately not implemented in this first scaffold. Session/API tokens are short-lived, so the production client should implement a proper login flow and secure token handling instead of storing a pasted token.
-
-## Building
-
-Requirements:
-
-- Android Studio compatible with AGP 9.3
-- JDK 17+
-- Android SDK 37
-
-Open the repository in Android Studio and run the `app` configuration.
-
-## Tech
-
-- Kotlin
-- Jetpack Compose
-- Material 3 / Material You
-- Compile/target SDK 37
-- Min SDK 26
-
-## Project status
-
-This is an experimental side project and **not an official Gramps project**. "Gramps" and related project names belong to their respective owners.
+This client communicates directly with the Gramps Web server you configure. Do not use an untrusted HTTP server. The app does not store passwords, does not disable TLS validation, and should not log tokens or authorization headers.
 
 ## License
 

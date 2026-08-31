@@ -66,9 +66,9 @@ fun PersonProfileScreen(
                         if (state.isStale) Text("Offline — showing cached data", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
-                RelationshipSection("Parents", state.relationships.parentHandles, onPersonSelected)
-                RelationshipSection("Partners", state.relationships.partnerHandles, onPersonSelected)
-                RelationshipSection("Children", state.relationships.childHandles, onPersonSelected)
+                RelationshipSection("Parents", state.relationships.parents, onPersonSelected)
+                RelationshipSection("Partners", state.relationships.partners, onPersonSelected)
+                RelationshipSection("Children", state.relationships.children, onPersonSelected)
                 Section("Events") {
                     val events = listOfNotNull(person.profile?.birth, person.profile?.death) + person.profile?.events.orEmpty()
                     if (events.isEmpty()) Text("No events were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -83,12 +83,19 @@ fun PersonProfileScreen(
 }
 
 @Composable
-private fun RelationshipSection(title: String, handles: List<String>, onPersonSelected: (String) -> Unit) = Section(title) {
-    if (handles.isEmpty()) Text("No $title were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-    else handles.forEach { handle ->
-        Row(Modifier.fillMaxWidth().clickable { onPersonSelected(handle) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(handle, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Icon(Icons.Outlined.ChevronRight, "Open person")
+private fun RelationshipSection(
+    title: String,
+    people: List<PersonProfileViewModel.RelatedPerson>,
+    onPersonSelected: (String) -> Unit
+) = Section(title) {
+    if (people.isEmpty()) Text("No $title were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    else people.forEach { person ->
+        Row(Modifier.fillMaxWidth().clickable { onPersonSelected(person.handle) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(person.displayName, style = MaterialTheme.typography.bodyLarge)
+                person.lifeYears?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            Icon(Icons.Outlined.ChevronRight, "Open ${person.displayName}")
         }
     }
 }

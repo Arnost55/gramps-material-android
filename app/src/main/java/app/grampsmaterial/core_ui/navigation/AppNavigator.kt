@@ -51,11 +51,15 @@ fun AppNavigator(
     val currentRoute = navBackStackEntry?.destination?.route
 
     LaunchedEffect(sessionState.isLoading, sessionState.isConnected, sessionState.hasSelectedTree) {
-        if (!sessionState.isLoading && sessionState.isConnected) {
-            navController.navigate(
-                if (sessionState.hasSelectedTree) NavDestination.Home.route else NavDestination.TreeSelection.route
-            ) {
-                popUpTo(NavDestination.Welcome.route) { inclusive = true }
+        if (sessionState.isLoading) return@LaunchedEffect
+        val destination = if (sessionState.isConnected) {
+            if (sessionState.hasSelectedTree) NavDestination.Home.route else NavDestination.TreeSelection.route
+        } else {
+            NavDestination.Welcome.route
+        }
+        if (currentRoute != destination) {
+            navController.navigate(destination) {
+                popUpTo(if (destination == NavDestination.Welcome.route) 0 else NavDestination.Welcome.route) { inclusive = true }
             }
         }
     }
@@ -122,9 +126,7 @@ fun AppNavigator(
             }
             composable(NavDestination.Connection.route) {
                 ConnectionScreen(
-                    onConnected = { server: GrampsServer ->
-                        navController.navigate(NavDestination.TreeSelection.route)
-                    },
+                    onConnected = { },
                     onBackToWelcome = { navController.popBackStack() }
                 )
             }
@@ -171,7 +173,10 @@ fun AppNavigator(
             }
             composable(NavDestination.Tree.route) {
                 TreeViewerScreen(
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onPersonSelected = { handle ->
+                        navController.navigate("${NavDestination.PersonProfile.route}/$handle")
+                    }
                 )
             }
             composable(NavDestination.Settings.route) {

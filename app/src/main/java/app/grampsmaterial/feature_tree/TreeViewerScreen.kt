@@ -1,176 +1,121 @@
 package app.grampsmaterial.feature_tree
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountTree
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import app.grampsmaterial.core_ui.theme.GrampsMaterialTheme
-import app.grampsmaterial.feature_tree.viewmodel.TreeSelectionViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import app.grampsmaterial.core_network.models.displayName
+import app.grampsmaterial.core_network.models.lifeYears
+import app.grampsmaterial.feature_tree.viewmodel.TreeViewerViewModel
 
 @Composable
 fun TreeViewerScreen(
     onBack: () -> Unit,
+    onPersonSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TreeSelectionViewModel = hiltViewModel()
+    viewModel: TreeViewerViewModel = hiltViewModel()
 ) {
-    val selectedTreeId by viewModel.selectedTreeId.collectAsState()
-    val selectedTreeName by viewModel.selectedTreeName.collectAsState()
-    
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // App bar with back button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Text(
-                text = selectedTreeName,
-                style = MaterialTheme.typography.titleLarge
+    val state by viewModel.state.collectAsState()
+    var generations by remember { mutableIntStateOf(4) }
+    var scale by remember { mutableFloatStateOf(1f) }
+    var pan by remember { mutableStateOf(Offset.Zero) }
+    var canvasSize by remember { mutableStateOf(IntSize.Zero) }
+    LaunchedEffect(generations) { viewModel.load(generations) }
+    LaunchedEffect(state.layout, canvasSize) {
+        state.layout?.takeIf { canvasSize != IntSize.Zero }?.let { layout ->
+            scale = minOf(1f, (canvasSize.width - 32f) / layout.width, (canvasSize.height - 32f) / layout.height)
+            pan = Offset(
+                (canvasSize.width - layout.width * scale) / 2f,
+                (canvasSize.height - layout.height * scale) / 2f
             )
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Family Tree Viewer",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Currently viewing: $selectedTreeName",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Tree ID: $selectedTreeId",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AccountTree,
-                    contentDescription = "Tree Visualization",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .padding(bottom = 16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Tree Visualization\n(Implementation in progress)",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "This feature will allow you to view ancestors and descendants.",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "View Mode: Ancestors",
-                style = MaterialTheme.typography.labelLarge
-            )
-            
-            IconButton(onClick = { }) {
-                Icon(
-                    imageVector = Icons.Outlined.Refresh,
-                    contentDescription = "Refresh",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Back to Home")
         }
     }
-}
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun TreeViewerScreenPreviewWrapper() {
-    GrampsMaterialTheme {
-        TreeViewerScreen(onBack = {})
+    Column(modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Ancestor tree", style = MaterialTheme.typography.titleLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { generations = (generations - 1).coerceAtLeast(2) }) { Icon(Icons.Outlined.Remove, "Fewer generations") }
+                Text("$generations generations")
+                IconButton(onClick = { generations = (generations + 1).coerceAtMost(6) }) { Icon(Icons.Outlined.Add, "More generations") }
+                IconButton(onClick = { scale = 1f; pan = Offset.Zero; viewModel.load(generations) }) { Icon(Icons.Outlined.Refresh, "Fit and refresh") }
+            }
+        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when {
+                state.isLoading -> CircularProgressIndicator()
+                state.message != null -> Text(requireNotNull(state.message), Modifier.padding(32.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                state.layout != null -> {
+                    val layout = requireNotNull(state.layout)
+                    val primary = MaterialTheme.colorScheme.primary
+                    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+                    val onPrimary = MaterialTheme.colorScheme.onPrimary
+                    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+                    Canvas(
+                        Modifier.fillMaxSize()
+                            .onSizeChanged { canvasSize = it }
+                            .pointerInput(Unit) { detectTransformGestures { _, delta, zoom, _ -> scale = (scale * zoom).coerceIn(.45f, 2.5f); pan += delta } }
+                            .pointerInput(layout, scale, pan) { detectTapGestures { point ->
+                                val content = (point - pan) / scale
+                                layout.nodes.values.firstOrNull { node -> content.x in node.x..node.x + 180f && content.y in node.y..node.y + 80f }?.let { onPersonSelected(it.handle) }
+                            } }
+                    ) {
+                        withTransform({ translate(pan.x, pan.y); scale(scale, scale) }) {
+                            state.edges.forEach { edge ->
+                                val child = layout.nodes[edge.childHandle] ?: return@forEach
+                                val parent = layout.nodes[edge.parentHandle] ?: return@forEach
+                                drawLine(primary.copy(alpha = .42f), Offset(child.x + 180f, child.y + 40f), Offset(parent.x, parent.y + 40f), strokeWidth = 3f)
+                            }
+                            layout.nodes.values.forEach { node ->
+                                val isRoot = node.handle == state.rootHandle
+                                drawRoundRect(if (isRoot) primary else surfaceVariant, Offset(node.x, node.y), Size(180f, 80f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(18f))
+                                val person = state.people[node.handle]
+                                drawContext.canvas.nativeCanvas.apply {
+                                    drawText(person?.displayName()?.take(20) ?: node.handle.take(12), node.x + 12f, node.y + 33f, android.graphics.Paint().apply { color = if (isRoot) onPrimary.toArgb() else onSurfaceVariant.toArgb(); textSize = 17f; isAntiAlias = true })
+                                    drawText(person?.lifeYears().orEmpty().take(18), node.x + 12f, node.y + 60f, android.graphics.Paint().apply { color = if (isRoot) onPrimary.copy(alpha = .78f).toArgb() else onSurfaceVariant.copy(alpha = .72f).toArgb(); textSize = 13f; isAntiAlias = true })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

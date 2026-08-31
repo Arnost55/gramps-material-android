@@ -2,19 +2,24 @@ package app.grampsmaterial.feature_person.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.PersonRepository
 import app.grampsmaterial.core_network.models.GrampsPerson
+import app.grampsmaterial.core_network.models.displayName
+import app.grampsmaterial.core_network.models.lifeYears
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class PersonProfileViewModel @Inject constructor(
-    private val personRepository: PersonRepository
+    private val personRepository: PersonRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -30,6 +35,9 @@ class PersonProfileViewModel @Inject constructor(
             if (cached != null) _uiState.update { it.copy(person = cached, isLoading = true, isStale = true) }
             try {
                 val person = personRepository.getPersonFromNetwork(personHandle)
+                if (sessionManager.homePersonHandleFlow.first().isBlank()) {
+                    sessionManager.saveHomePersonHandle(person.handle)
+                }
                 val relationships = loadRelationships(person)
                 _uiState.value = UiState(person = person, relationships = relationships)
             } catch (_: Exception) {
@@ -48,13 +56,19 @@ class PersonProfileViewModel @Inject constructor(
         val partners = partnerFamilies.flatMap { listOfNotNull(it.father_handle, it.mother_handle) }
             .filterNot { it == person.handle }.distinct()
         val children = partnerFamilies.flatMap { family -> family.child_ref_list.map { it.ref } }.distinct()
-        return Relationships(parents, partners, children)
+        suspend fun summaries(handles: List<String>): List<RelatedPerson> = handles.map { handle ->
+            val related = personRepository.getPersonForGraph(handle)
+            RelatedPerson(handle = related.handle, displayName = related.displayName(), lifeYears = related.lifeYears())
+        }
+        return Relationships(summaries(parents), summaries(partners), summaries(children))
     }
 
+    data class RelatedPerson(val handle: String, val displayName: String, val lifeYears: String?)
+
     data class Relationships(
-        val parentHandles: List<String> = emptyList(),
-        val partnerHandles: List<String> = emptyList(),
-        val childHandles: List<String> = emptyList()
+        val parents: List<RelatedPerson> = emptyList(),
+        val partners: List<RelatedPerson> = emptyList(),
+        val children: List<RelatedPerson> = emptyList()
     )
 
     data class UiState(

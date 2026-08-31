@@ -50,11 +50,13 @@ fun HomeScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Home", style = MaterialTheme.typography.headlineMedium)
-                Text(
-                    "Welcome back, ${uiState.username}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (uiState.username.isNotBlank()) {
+                    Text(
+                        "Welcome back, ${uiState.username}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.Outlined.Settings,
@@ -131,16 +133,33 @@ fun HomeScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(
                 modifier = Modifier.weight(1f),
-                label = "People",
+                label = "People loaded",
                 value = uiState.personCount.toString(),
                 icon = Icons.Outlined.People
             )
             StatCard(
                 modifier = Modifier.weight(1f),
                 label = "Birthdays this month",
-                value = uiState.todayEventsCount.toString(),
+                value = uiState.birthdays.size.toString(),
                 icon = Icons.Outlined.AccountTree
             )
+        }
+
+        if (uiState.birthdays.isNotEmpty()) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Birthdays this month", style = MaterialTheme.typography.titleMedium)
+                    uiState.birthdays.take(3).forEach { birthday ->
+                        Text("${birthday.displayName} · ${birthday.date}", color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    }
+                    if (uiState.birthdays.size > 3) {
+                        Text("+${uiState.birthdays.size - 3} more", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
         }
 
         Text("Recently viewed", style = MaterialTheme.typography.titleLarge)

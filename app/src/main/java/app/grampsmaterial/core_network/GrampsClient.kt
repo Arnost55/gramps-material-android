@@ -63,14 +63,20 @@ class GrampsClient(private val sessionManager: SessionManager) {
 
         val authInterceptor = Interceptor { chain ->
             val request = chain.request()
+            val isTokenRequest = request.url.encodedPath.endsWith("/api/token/")
             val builder = request.newBuilder()
-            if (!request.url.encodedPath.endsWith("/api/token/")) {
-                val token = sessionManager.getAccessToken()
-                if (!token.isNullOrEmpty()) {
+            if (!isTokenRequest) {
+                sessionManager.getAccessToken()?.takeIf(String::isNotBlank)?.let { token ->
                     builder.header("Authorization", "Bearer $token")
                 }
             }
-            chain.proceed(builder.build())
+            chain.proceed(builder.build()).also { response ->
+                if (response.code == 401 && !isTokenRequest) {
+                    // DataStore cannot be updated on OkHttp's thread. Clearing the session makes
+                    // the navigator return to onboarding instead of leaving stale auth state alive.
+                    CoroutineScope(Dispatchers.IO).launch { sessionManager.logout() }
+                }
+            }
         }
 
         val okHttpClientBuilder = OkHttpClient.Builder()

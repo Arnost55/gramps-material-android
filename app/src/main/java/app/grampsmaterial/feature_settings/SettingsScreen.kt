@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,6 +45,7 @@ fun SettingsScreen(
 ) {
     val uiState by settingsViewModel.uiState.collectAsState()
     val darkTheme by themeViewModel.darkTheme.collectAsState()
+    val themeMode by themeViewModel.themeMode.collectAsState()
     val dynamicColor by themeViewModel.dynamicColor.collectAsState()
     val amoledMode by themeViewModel.amoledMode.collectAsState()
 
@@ -125,11 +127,18 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "Dark Mode")
-            Switch(
-                checked = darkTheme,
-                onCheckedChange = { themeViewModel.setDarkTheme(it) }
-            )
+            Text(text = if (themeMode == "system") "Theme: System" else "Dark Mode")
+            if (themeMode == "system") {
+                TextButton(onClick = { themeViewModel.setThemeMode("dark") }) { Text("Use dark") }
+            } else {
+                Switch(
+                    checked = darkTheme,
+                    onCheckedChange = { themeViewModel.setDarkTheme(it) }
+                )
+            }
+        }
+        if (themeMode != "system") {
+            TextButton(onClick = { themeViewModel.setThemeMode("system") }) { Text("Use system theme") }
         }
         
         Row(
@@ -173,7 +182,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Cache Size: ${uiState.cacheSize} MB",
+            text = "Cached people: ${uiState.cachedPeopleCount}",
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(16.dp))

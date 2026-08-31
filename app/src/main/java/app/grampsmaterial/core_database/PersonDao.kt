@@ -15,6 +15,9 @@ interface PersonDao {
     @Query("SELECT * FROM people")
     suspend fun getAllPeople(): List<GrampsPerson>
 
+    @Query("SELECT COUNT(*) FROM people")
+    suspend fun getPersonCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPerson(person: GrampsPerson): Long
 

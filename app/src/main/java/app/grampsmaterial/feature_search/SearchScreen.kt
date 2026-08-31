@@ -16,14 +16,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +50,10 @@ fun SearchScreen(
     var query by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(query) {
+        if (query.isBlank()) viewModel.clearSearch() else viewModel.searchPeople(query)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -69,23 +75,21 @@ fun SearchScreen(
                     .weight(1f)
                     .padding(end = 8.dp)
             )
-            Button(
-                onClick = {
-                    if (query.isNotBlank()) {
-                        viewModel.searchPeople(query)
-                    }
-                },
-                modifier = Modifier.size(48.dp),
-                enabled = query.isNotBlank()
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = "Search"
-                )
+            if (query.isNotBlank()) {
+                IconButton(
+                    onClick = { query = "" },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Clear search")
+                }
             }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
+        if (uiState.isOffline) {
+            Text("Offline — showing cached results", color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         
         // Search results
         if (uiState.isLoading) {

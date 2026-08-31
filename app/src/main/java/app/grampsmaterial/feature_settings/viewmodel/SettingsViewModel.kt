@@ -3,6 +3,7 @@ package app.grampsmaterial.feature_settings.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.grampsmaterial.BuildConfig
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.PersonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,8 +49,8 @@ open class SettingsViewModel @Inject constructor(
                     isDarkMode = isDarkMode,
                     useDynamicColors = useDynamicColors,
                     useAmoledOptimization = useAmoledOptimization,
-                    cacheSize = 0.0,
-                    appVersion = "0.1.0"
+                    cachedPeopleCount = personRepository.getCachedPersonCount(),
+                    appVersion = BuildConfig.VERSION_NAME
                 ) }
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading settings state", e)
@@ -88,7 +89,7 @@ open class SettingsViewModel @Inject constructor(
         val isDarkMode: Boolean = false,
         val useDynamicColors: Boolean = false,
         val useAmoledOptimization: Boolean = false,
-        val cacheSize: Double = 0.0,
+        val cachedPeopleCount: Int = 0,
         val appVersion: String = "0.1.0"
     )
 }

@@ -22,10 +22,14 @@ class PersonRepository @Inject constructor(
 ) {
     private suspend fun api(): GrampsApiService =
         grampsClient.getApiService(sessionManager.serverUrlFlow.first())
-    suspend fun getPersonFromNetwork(handle: String): GrampsPerson {
+    suspend fun getPersonFromNetwork(handle: String): GrampsPerson = getPerson(handle, recordView = true)
+
+    suspend fun getPersonForGraph(handle: String): GrampsPerson = getPerson(handle, recordView = false)
+
+    private suspend fun getPerson(handle: String, recordView: Boolean): GrampsPerson {
         val person = api().getPerson(handle, "all")
         dbProvider.personDao.insertPerson(person)
-        recordRecent(person)
+        if (recordView) recordRecent(person)
         return person
     }
 
@@ -63,8 +67,18 @@ class PersonRepository @Inject constructor(
         dbProvider.personDao.insertAllPeople(*people)
     }
 
-    suspend fun getAllCachedPeople(): List<GrampsPerson> {
+    suspend fun getAllCachedPeople(): List<GrampsPerson> = dbProvider.personDao.getAllPeople()
+
+    suspend fun getCachedPersonCount(): Int = dbProvider.personDao.getPersonCount()
+
+    suspend fun searchCachedPeople(query: String): List<SearchResult> {
+        val needle = query.trim()
+        if (needle.isBlank()) return emptyList()
         return dbProvider.personDao.getAllPeople()
+            .asSequence()
+            .filter { it.displayName().contains(needle, ignoreCase = true) }
+            .map { person -> SearchResult(handle = person.handle, object_type = "person", `object` = person) }
+            .toList()
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

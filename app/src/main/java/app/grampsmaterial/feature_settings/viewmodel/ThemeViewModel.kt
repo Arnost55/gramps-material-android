@@ -18,6 +18,8 @@ open class ThemeViewModel @Inject constructor(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
+    private val _themeMode = MutableStateFlow("system")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
     private val _darkTheme = MutableStateFlow(false)
     open val darkTheme: StateFlow<Boolean> = _darkTheme.asStateFlow()
 
@@ -28,7 +30,12 @@ open class ThemeViewModel @Inject constructor(
     open val amoledMode: StateFlow<Boolean> = _amoledMode.asStateFlow()
 
     init {
-        viewModelScope.launch { sessionManager.themeModeFlow.collect { _darkTheme.value = it == "dark" } }
+        viewModelScope.launch {
+            sessionManager.themeModeFlow.collect {
+                _themeMode.value = it
+                _darkTheme.value = it == "dark"
+            }
+        }
         viewModelScope.launch { sessionManager.dynamicColorsFlow.collect { _dynamicColor.value = it } }
         viewModelScope.launch { sessionManager.amoledModeFlow.collect { _amoledMode.value = it } }
     }
@@ -42,7 +49,8 @@ open class ThemeViewModel @Inject constructor(
                     else -> false
                 }
                 
-                _darkTheme.update { isDark }
+                _themeMode.update { themeMode }
+            _darkTheme.update { isDark }
                 _dynamicColor.update { sessionManager.dynamicColorsFlow.first() }
                 _amoledMode.update { sessionManager.amoledModeFlow.first() }
             } catch (e: Exception) {
@@ -51,10 +59,20 @@ open class ThemeViewModel @Inject constructor(
         }
     }
 
+    open fun setThemeMode(mode: String) {
+        require(mode in setOf("system", "light", "dark"))
+        viewModelScope.launch {
+            sessionManager.setThemeMode(mode)
+            _themeMode.value = mode
+            _darkTheme.value = mode == "dark"
+        }
+    }
+
     open fun setDarkTheme(darkTheme: Boolean) {
         viewModelScope.launch {
             val mode = if (darkTheme) "dark" else "light"
             sessionManager.setThemeMode(mode)
+            _themeMode.update { mode }
             _darkTheme.update { darkTheme }
         }
     }

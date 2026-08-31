@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_network.PersonRepository
+import app.grampsmaterial.core_network.models.displayName
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_database.RecentPersonEntity
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,14 +51,19 @@ class HomeViewModel @Inject constructor(
                 }
                 val personCount = people.size
                 val currentMonth = java.time.LocalDate.now().monthValue
-                val todayEventsCount = people.count { person ->
-                    Regex("""-0?$currentMonth-""").containsMatchIn(person.birthDate.orEmpty())
-                }
+                val birthdays = people.mapNotNull { person ->
+                    val date = person.profile?.birth?.date ?: return@mapNotNull null
+                    if (Regex("""(?:^|\\D)0?$currentMonth(?:\\D|$)""").containsMatchIn(date)) {
+                        Birthday(person.displayName(), date)
+                    } else {
+                        null
+                    }
+                }.sortedBy { it.date }
                 _uiState.update { it.copy(
-                    username = username.ifBlank { "User" },
+                    username = username,
                     selectedTreeName = selectedTreeName,
                     personCount = personCount,
-                    todayEventsCount = todayEventsCount,
+                    birthdays = birthdays,
                     isUsingCachedData = usingCachedData
                 ) }
             } catch (e: Exception) {
@@ -70,11 +76,13 @@ class HomeViewModel @Inject constructor(
         loadState()
     }
 
+    data class Birthday(val displayName: String, val date: String)
+
     data class UiState(
-        val username: String = "User",
+        val username: String = "",
         val selectedTreeName: String = "",
         val personCount: Int = 0,
-        val todayEventsCount: Int = 0,
+        val birthdays: List<Birthday> = emptyList(),
         val isUsingCachedData: Boolean = false,
         val recentPeople: List<RecentPersonEntity> = emptyList()
     )

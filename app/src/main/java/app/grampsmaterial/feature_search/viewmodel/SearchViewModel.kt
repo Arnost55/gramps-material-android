@@ -5,15 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_network.PersonRepository
 import app.grampsmaterial.core_network.models.SearchResult
-import app.grampsmaterial.core_database.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
+import kotlin.coroutines.coroutineContext
 import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 
@@ -21,8 +21,7 @@ private const val TAG = "SearchViewModel"
 
 @HiltViewModel
 open class SearchViewModel @Inject constructor(
-    private val personRepository: PersonRepository,
-    private val sessionManager: SessionManager
+    private val personRepository: PersonRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -45,32 +44,32 @@ open class SearchViewModel @Inject constructor(
                 
                 _uiState.update { it.copy(
                     isLoading = false,
-                    results = results
+                    results = results,
+                    isOffline = false
                 ) }
                 
-            } catch (e: HttpException) {
-                Log.e(TAG, "HTTP error during search", e)
-                _uiState.update { it.copy(
-                    isLoading = false,
-                    error = "Search failed. Please try again."
-                ) }
             } catch (e: Exception) {
-                Log.e(TAG, "Error during search", e)
-                _uiState.update { it.copy(
-                    isLoading = false,
-                    error = "Search error: ${e.localizedMessage}"
-                ) }
+                coroutineContext.ensureActive()
+                Log.w(TAG, "Network search unavailable; checking cache", e)
+                val cached = personRepository.searchCachedPeople(query)
+                _uiState.update {
+                    if (cached.isNotEmpty()) it.copy(isLoading = false, results = cached, isOffline = true)
+                    else it.copy(isLoading = false, results = emptyList(), isOffline = true,
+                        error = "Offline and no matching people are cached on this device.")
+                }
             }
         }
     }
 
-    open fun refresh() {
-        // Implementation for refresh if needed
+    open fun clearSearch() {
+        searchJob?.cancel()
+        _uiState.value = UiState()
     }
 
     data class UiState(
         val isLoading: Boolean = false,
         val error: String? = null,
-        val results: List<SearchResult> = emptyList()
+        val results: List<SearchResult> = emptyList(),
+        val isOffline: Boolean = false
     )
 }

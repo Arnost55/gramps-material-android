@@ -8,7 +8,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -20,12 +20,16 @@ class SessionViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _state.value = SessionState(
-                isLoading = false,
-                isConnected = sessionManager.isConnectedFlow.first() &&
-                    !sessionManager.getAccessToken().isNullOrBlank(),
-                hasSelectedTree = sessionManager.selectedTreeIdFlow.first().isNotBlank()
-            )
+            combine(
+                sessionManager.isConnectedFlow,
+                sessionManager.selectedTreeIdFlow
+            ) { isConnected, selectedTreeId ->
+                SessionState(
+                    isLoading = false,
+                    isConnected = isConnected && !sessionManager.getAccessToken().isNullOrBlank(),
+                    hasSelectedTree = selectedTreeId.isNotBlank()
+                )
+            }.collect { _state.value = it }
         }
     }
 

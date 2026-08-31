@@ -3,6 +3,7 @@ package app.grampsmaterial
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,7 +18,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val themeViewModel: ThemeViewModel = hiltViewModel()
-            val darkTheme by themeViewModel.darkTheme.collectAsState()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+            val darkTheme = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> systemDark
+            }
             val dynamicColor by themeViewModel.dynamicColor.collectAsState()
             val amoledMode by themeViewModel.amoledMode.collectAsState()
             GrampsMaterialTheme(
