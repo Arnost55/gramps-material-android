@@ -33,7 +33,27 @@ class PersonRepository @Inject constructor(
         return person
     }
 
-    suspend fun getFamilyFromNetwork(handle: String): GrampsFamily = api().getFamily(handle, "all")
+    suspend fun getFamilyFromNetwork(handle: String): GrampsFamily {
+        return dbProvider.familyDao.getFamilyByHandle(handle)
+            ?: api().getFamily(handle, "all").also { dbProvider.familyDao.insertFamily(it) }
+    }
+
+    suspend fun loadAllFamiliesFromNetwork(): List<GrampsFamily> {
+        val pageSize = 50
+        val families = linkedMapOf<String, GrampsFamily>()
+        var page = 1
+        while (true) {
+            val response = api().getFamilies(page = page, pageSize = pageSize)
+            val added = response.count { family -> families.put(family.handle, family) == null }
+            if (response.isEmpty() || response.size < pageSize || added == 0) break
+            page++
+        }
+        val result = families.values.toList()
+        if (result.isNotEmpty()) dbProvider.familyDao.insertAllFamilies(*result.toTypedArray())
+        return result
+    }
+
+    suspend fun getAllCachedFamilies(): List<GrampsFamily> = dbProvider.familyDao.getAllFamilies()
 
     suspend fun searchPeopleFromNetwork(query: String): List<SearchResult> {
         val results = api().search(
@@ -120,6 +140,7 @@ class PersonRepository @Inject constructor(
 
     suspend fun clearCache() {
         dbProvider.personDao.deleteAllPeople()
+        dbProvider.familyDao.deleteAllFamilies()
         dbProvider.treeDao.deleteAllTrees()
         dbProvider.recentPeopleDao.clear()
     }

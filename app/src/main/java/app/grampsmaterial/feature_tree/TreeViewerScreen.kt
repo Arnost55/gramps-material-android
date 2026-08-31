@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,10 +55,11 @@ fun TreeViewerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var generations by remember { mutableIntStateOf(4) }
+    var mode by remember { mutableStateOf(TreeMode.ANCESTORS) }
     var scale by remember { mutableFloatStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
-    LaunchedEffect(generations) { viewModel.load(generations) }
+    LaunchedEffect(generations, mode) { viewModel.load(generations, mode) }
     LaunchedEffect(state.layout, canvasSize) {
         state.layout?.takeIf { canvasSize != IntSize.Zero }?.let { layout ->
             scale = minOf(1f, (canvasSize.width - 32f) / layout.width, (canvasSize.height - 32f) / layout.height)
@@ -70,12 +72,24 @@ fun TreeViewerScreen(
 
     Column(modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Ancestor tree", style = MaterialTheme.typography.titleLarge)
+            Text("${mode.label} tree", style = MaterialTheme.typography.titleLarge)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { generations = (generations - 1).coerceAtLeast(2) }) { Icon(Icons.Outlined.Remove, "Fewer generations") }
                 Text("$generations generations")
                 IconButton(onClick = { generations = (generations + 1).coerceAtMost(6) }) { Icon(Icons.Outlined.Add, "More generations") }
-                IconButton(onClick = { scale = 1f; pan = Offset.Zero; viewModel.load(generations) }) { Icon(Icons.Outlined.Refresh, "Fit and refresh") }
+                IconButton(onClick = { scale = 1f; pan = Offset.Zero; viewModel.load(generations, mode) }) { Icon(Icons.Outlined.Refresh, "Fit and refresh") }
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TreeMode.entries.forEach { option ->
+                FilterChip(
+                    selected = mode == option,
+                    onClick = { mode = option },
+                    label = { Text(option.label) }
+                )
             }
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -13,9 +13,10 @@ class GrampsDatabaseProvider @Inject constructor(context: Context) {
         context.applicationContext,
         GrampsDatabase::class.java,
         "gramps_database"
-    ).addMigrations(MIGRATION_1_2).build()
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
 
     val personDao: PersonDao = database.personDao()
+    val familyDao: FamilyDao = database.familyDao()
     val treeDao: TreeDao = database.treeDao()
     val recentPeopleDao: RecentPeopleDao = database.recentPeopleDao()
 
@@ -27,6 +28,16 @@ class GrampsDatabaseProvider @Inject constructor(context: Context) {
                         "treeId TEXT NOT NULL, handle TEXT NOT NULL, displayName TEXT NOT NULL, " +
                         "lifeYears TEXT, portraitRef TEXT, lastViewedAt INTEGER NOT NULL, " +
                         "PRIMARY KEY(treeId, handle))"
+                )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS families (" +
+                        "handle TEXT NOT NULL, gramps_id TEXT, father_handle TEXT, mother_handle TEXT, " +
+                        "child_ref_list TEXT NOT NULL, type TEXT, profile TEXT, PRIMARY KEY(handle))"
                 )
             }
         }

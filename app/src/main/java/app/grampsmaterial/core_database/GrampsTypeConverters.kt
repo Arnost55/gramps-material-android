@@ -40,4 +40,14 @@ class GrampsTypeConverters {
     fun fromPersonProfile(value: PersonProfile?): String? = value?.let { json.encodeToString(it) }
     @TypeConverter
     fun toPersonProfile(value: String?): PersonProfile? = value?.let { json.decodeFromString(it) }
+
+    @TypeConverter
+    fun fromChildRefList(value: List<ChildRef>): String = json.encodeToString(value)
+    @TypeConverter
+    fun toChildRefList(value: String): List<ChildRef> = json.decodeFromString(value)
+
+    @TypeConverter
+    fun fromFamilyProfile(value: FamilyProfile?): String? = value?.let { json.encodeToString(it) }
+    @TypeConverter
+    fun toFamilyProfile(value: String?): FamilyProfile? = value?.let { json.decodeFromString(it) }
 }

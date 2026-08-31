@@ -33,7 +33,10 @@ class PeopleCacheWorker(
             return Result.success()
         }
         return try {
-            dependencies.personRepository().loadAllPeopleFromNetwork()
+            dependencies.personRepository().apply {
+                loadAllPeopleFromNetwork()
+                loadAllFamiliesFromNetwork()
+            }
             Result.success()
         } catch (_: Exception) {
             Result.retry()

@@ -137,9 +137,10 @@ data class GrampsPerson(
         get() = profile?.death?.date
 }
 
+@Entity(tableName = "families")
 @Serializable
 data class GrampsFamily(
-    val handle: String,
+    @PrimaryKey val handle: String,
     val gramps_id: String? = null,
     val father_handle: String? = null,
     val mother_handle: String? = null,

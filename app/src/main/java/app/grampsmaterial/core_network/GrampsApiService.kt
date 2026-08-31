@@ -41,6 +41,13 @@ interface GrampsApiService {
         @Query("profile") profile: String = "all"
     ): GrampsPerson
 
+    @GET("api/families/")
+    suspend fun getFamilies(
+        @Query("page") page: Int = 1,
+        @Query("pagesize") pageSize: Int = 50,
+        @Query("profile") profile: String = "all"
+    ): List<GrampsFamily>
+
     @GET("api/families/{handle}")
     suspend fun getFamily(
         @Path("handle") handle: String,
