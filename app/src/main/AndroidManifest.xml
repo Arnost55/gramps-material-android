@@ -5,6 +5,7 @@
     <application
         android:allowBackup="true"
         android:label="Gramps Material"
+        android:name="app.grampsmaterial.GrampsMaterialApplication"
         android:supportsRtl="true"
         android:theme="@style/Theme.GrampsMaterial"
         android:usesCleartextTraffic="false">

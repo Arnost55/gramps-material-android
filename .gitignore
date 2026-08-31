@@ -1,5 +1,12 @@
 *.iml
 .gradle/
+.kotlin/
+# Local Gradle/JDK downloads and caches
+/gradle_home*/
+/jdks/
+/OpenJDK17.zip
+/gradle-*-bin.zip
+/gradle-[0-9]*/
 /local.properties
 /.idea/
 .DS_Store

@@ -1,4 +1,6 @@
-package app.grampsmaterial.data
+package app.grampsmaterial.core_network
+
+import app.grampsmaterial.core_network.GrampsServer
 
 /**
  * Boundary for the Gramps Web REST API.

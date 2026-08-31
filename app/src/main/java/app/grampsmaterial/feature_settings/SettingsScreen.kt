@@ -1,0 +1,202 @@
+package app.grampsmaterial.feature_settings
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import app.grampsmaterial.core_ui.theme.GrampsMaterialTheme
+import app.grampsmaterial.feature_settings.viewmodel.SettingsViewModel
+import app.grampsmaterial.feature_settings.viewmodel.ThemeViewModel
+
+@Composable
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onEditServer: () -> Unit,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel()
+) {
+    val uiState by settingsViewModel.uiState.collectAsState()
+    val darkTheme by themeViewModel.darkTheme.collectAsState()
+    val dynamicColor by themeViewModel.dynamicColor.collectAsState()
+    val amoledMode by themeViewModel.amoledMode.collectAsState()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Header with back button and logout
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.titleLarge
+            )
+            IconButton(onClick = onLogout) {
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = "Logout"
+                )
+            }
+        }
+
+        // Server Section
+        Text(
+            text = "Server",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = uiState.serverUrl,
+                onValueChange = { },
+                label = { Text("Server URL") },
+                readOnly = true,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(onClick = onEditServer) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit server URL"
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Text(
+            text = "Status: ${if (uiState.isConnected) "Connected" else "Disconnected"}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (uiState.isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Appearance Section
+        Text(
+            text = "Appearance",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "Dark Mode")
+            Switch(
+                checked = darkTheme,
+                onCheckedChange = { themeViewModel.setDarkTheme(it) }
+            )
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "Dynamic Colors")
+            Switch(
+                checked = dynamicColor,
+                onCheckedChange = { themeViewModel.setDynamicColor(it) }
+            )
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "AMOLED Optimization")
+            Switch(
+                checked = amoledMode,
+                onCheckedChange = { themeViewModel.setAmoledMode(it) }
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Data Section
+        Text(
+            text = "Data",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Button(
+            onClick = { settingsViewModel.clearCache() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Clear Cached People and Trees")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Cache Size: ${uiState.cacheSize} MB",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // About Section
+        Text(
+            text = "About",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Version: ${uiState.appVersion}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun SettingsScreenPreviewWrapper() {
+    GrampsMaterialTheme {
+        SettingsScreen(onBack = {}, onEditServer = {}, onLogout = {})
+    }
+}
