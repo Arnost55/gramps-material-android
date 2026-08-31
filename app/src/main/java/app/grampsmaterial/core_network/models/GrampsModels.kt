@@ -160,6 +160,14 @@ data class ChildRef(
 )
 
 @Serializable
+data class GrampsPlace(
+    val handle: String,
+    val title: String? = null,
+    val lat: Double? = null,
+    val long: Double? = null
+)
+
+@Serializable
 data class GrampsSource(
     val handle: String,
     val title: String? = null,

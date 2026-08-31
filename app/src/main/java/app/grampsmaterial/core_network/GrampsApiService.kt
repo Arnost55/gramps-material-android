@@ -63,6 +63,13 @@ interface GrampsApiService {
         @Query("pagesize") pageSize: Int = 100
     ): List<TimelineEvent>
 
+    @GET("api/places/")
+    suspend fun getPlaces(
+        @Query("page") page: Int = 1,
+        @Query("pagesize") pageSize: Int = 100,
+        @Query("profile") profile: String = "all"
+    ): List<GrampsPlace>
+
     @GET("api/citations/{handle}")
     suspend fun getCitation(
         @Path("handle") handle: String,

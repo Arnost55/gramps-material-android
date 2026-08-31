@@ -12,4 +12,5 @@ sealed class NavDestination(val route: String, @StringRes val titleRes: Int) {
     data object Tree : NavDestination(route = "tree", titleRes = R.string.tree_title)
     data object PersonProfile : NavDestination(route = "person_profile", titleRes = R.string.person_profile_title)
     data object Settings : NavDestination(route = "settings", titleRes = R.string.settings_title)
+    data object Places : NavDestination(route = "places", titleRes = R.string.app_name)
 }
