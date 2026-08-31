@@ -59,7 +59,8 @@ fun AppNavigator(
         }
         if (currentRoute != destination) {
             navController.navigate(destination) {
-                popUpTo(if (destination == NavDestination.Welcome.route) 0 else NavDestination.Welcome.route) { inclusive = true }
+                popUpTo(NavDestination.Welcome.route) { inclusive = true }
+                launchSingleTop = true
             }
         }
     }
