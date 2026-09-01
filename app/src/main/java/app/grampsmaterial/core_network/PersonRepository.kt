@@ -82,7 +82,12 @@ class PersonRepository @Inject constructor(
         val raw = service.getPersonRaw(handle)
         val name = (raw["primary_name"] as? JsonObject)?.toMutableMap() ?: mutableMapOf()
         name["first_name"] = JsonPrimitive(firstName)
-        name["surname_list"] = JsonArray(listOf(JsonObject(mapOf("surname" to JsonPrimitive(surname)))))
+        val existingSurnames = (name["surname_list"] as? JsonArray).orEmpty()
+        val surnames = existingSurnames.mapIndexed { index, value ->
+            if (index == 0 && value is JsonObject) JsonObject(value.toMutableMap().apply { put("surname", JsonPrimitive(surname)) }) else value
+        }.toMutableList()
+        if (surnames.isEmpty()) surnames += JsonObject(mapOf("surname" to JsonPrimitive(surname)))
+        name["surname_list"] = JsonArray(surnames)
         // `profile` is a read-only API projection and must not be sent back on PUT.
         val updated = JsonObject(raw.toMutableMap().apply {
             remove("profile")
@@ -100,7 +105,11 @@ class PersonRepository @Inject constructor(
         } catch (error: IOException) {
             dbProvider.pendingMutationDao.insert(PendingPersonNameMutationEntity(handle = handle, firstName = firstName, surname = surname))
             val cached = requireNotNull(getCachedPerson(handle)) { "Person is not cached" }
-            cached.copy(primary_name = GrampsName(first_name = firstName, surname_list = listOf(GrampsSurname(surname = surname)))).also { cachePerson(it) }
+            val cachedName = cached.primary_name
+            val cachedSurnames = cachedName?.surname_list.orEmpty().toMutableList()
+            if (cachedSurnames.isEmpty()) cachedSurnames += GrampsSurname(surname = surname)
+            else cachedSurnames[0] = cachedSurnames.first().copy(surname = surname)
+            cached.copy(primary_name = (cachedName ?: GrampsName()).copy(first_name = firstName, surname_list = cachedSurnames)).also { cachePerson(it) }
         }
     }
 
