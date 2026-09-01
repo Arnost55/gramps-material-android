@@ -160,6 +160,14 @@ data class ChildRef(
 )
 
 @Serializable
+data class GrampsReport(
+    val id: String,
+    val name: String? = null,
+    val description: String? = null,
+    val category: Int? = null
+)
+
+@Serializable
 data class GrampsPlace(
     val handle: String,
     val title: String? = null,

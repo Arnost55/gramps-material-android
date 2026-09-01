@@ -6,6 +6,7 @@ import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,7 @@ import app.grampsmaterial.feature_auth.WelcomeScreen
 import app.grampsmaterial.feature_home.HomeScreen
 import app.grampsmaterial.feature_person.PersonProfileScreen
 import app.grampsmaterial.feature_places.PlacesScreen
+import app.grampsmaterial.feature_reports.ReportsScreen
 import app.grampsmaterial.feature_search.SearchScreen
 import app.grampsmaterial.feature_settings.SettingsScreen
 import app.grampsmaterial.feature_settings.viewmodel.SettingsViewModel
@@ -81,6 +83,7 @@ fun AppNavigator(
                     NavDestination.PersonProfile.route + "/{personHandle}" -> stringResource(R.string.person_profile_title)
                     NavDestination.Settings.route -> stringResource(R.string.settings_title)
                     NavDestination.Places.route -> "Places"
+                    NavDestination.Reports.route -> "Reports"
                     else -> stringResource(R.string.app_name)
                 }
                 Text(text = title)
@@ -92,6 +95,7 @@ fun AppNavigator(
                     NavDestination.Search.route,
                     NavDestination.Tree.route,
                     NavDestination.Places.route,
+                    NavDestination.Reports.route,
                     NavDestination.Settings.route
                 )
             ) {
@@ -101,6 +105,7 @@ fun AppNavigator(
                         Triple(NavDestination.Search, Icons.Outlined.Search, "Search"),
                         Triple(NavDestination.Tree, Icons.Outlined.AccountTree, "Tree"),
                         Triple(NavDestination.Places, Icons.Outlined.Place, "Places"),
+                        Triple(NavDestination.Reports, Icons.Outlined.ListAlt, "Reports"),
                         Triple(NavDestination.Settings, Icons.Outlined.Settings, "Settings")
                     ).forEach { (destination, icon, label) ->
                         NavigationBarItem(
@@ -186,6 +191,7 @@ fun AppNavigator(
                 )
             }
             composable(NavDestination.Places.route) { PlacesScreen() }
+            composable(NavDestination.Reports.route) { ReportsScreen() }
             composable(NavDestination.Settings.route) {
                 val settingsViewModel: SettingsViewModel = hiltViewModel()
                 SettingsScreen(

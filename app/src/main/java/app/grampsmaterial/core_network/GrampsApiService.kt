@@ -63,6 +63,9 @@ interface GrampsApiService {
         @Query("pagesize") pageSize: Int = 100
     ): List<TimelineEvent>
 
+    @GET("api/reports/")
+    suspend fun getReports(): List<GrampsReport>
+
     @GET("api/places/")
     suspend fun getPlaces(
         @Query("page") page: Int = 1,
