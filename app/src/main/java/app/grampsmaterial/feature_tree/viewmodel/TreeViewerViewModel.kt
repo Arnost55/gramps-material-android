@@ -7,6 +7,7 @@ import app.grampsmaterial.core_network.PersonRepository
 import app.grampsmaterial.core_network.models.GrampsPerson
 import app.grampsmaterial.feature_tree.RelationshipGraphBuilder
 import app.grampsmaterial.feature_tree.TreeMode
+import app.grampsmaterial.feature_tree.PositionedNode
 import app.grampsmaterial.feature_tree.TreeLayout
 import app.grampsmaterial.feature_tree.TreeLayoutEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,7 +60,7 @@ class TreeViewerViewModel @Inject constructor(
             val graph = graphBuilder.build(
                 root = root,
                 mode = mode,
-                maxDepth = if (mode == TreeMode.FLEX) Int.MAX_VALUE else generations,
+                maxDepth = if (mode == TreeMode.FLEX || mode == TreeMode.RADIAL) Int.MAX_VALUE else generations,
                 parentsFor = { parentMap[it].orEmpty().distinct() },
                 childrenFor = { childMap[it].orEmpty().distinct() }
             )
@@ -69,7 +70,7 @@ class TreeViewerViewModel @Inject constructor(
                 mode = mode,
                 graph = graph.generations,
                 edges = graph.edges,
-                layout = layoutEngine.layout(graph.generations),
+                layout = if (mode == TreeMode.RADIAL) radialLayout(graph.generations) else layoutEngine.layout(graph.generations),
                 people = resolved,
                 rootHandle = root
             )
@@ -78,6 +79,23 @@ class TreeViewerViewModel @Inject constructor(
             _state.value = UiState(generations = generations, message = "Unable to load this ancestor tree. Check your connection and try again.")
         }
         }
+    }
+
+    private fun radialLayout(generations: List<List<String>>): TreeLayout {
+        val radiusStep = 190f
+        val outerRadius = (generations.size - 1).coerceAtLeast(1) * radiusStep
+        val canvas = outerRadius * 2 + 240f
+        val center = canvas / 2
+        val nodes = buildMap {
+            generations.forEachIndexed { generation, handles ->
+                if (generation == 0) put(handles.first(), PositionedNode(handles.first(), center - 90f, center - 40f))
+                else handles.forEachIndexed { index, handle ->
+                    val angle = (2.0 * Math.PI * index / handles.size) - Math.PI / 2
+                    put(handle, PositionedNode(handle, center + kotlin.math.cos(angle).toFloat() * generation * radiusStep - 90f, center + kotlin.math.sin(angle).toFloat() * generation * radiusStep - 40f))
+                }
+            }
+        }
+        return TreeLayout(nodes, canvas, canvas)
     }
 
     data class UiState(

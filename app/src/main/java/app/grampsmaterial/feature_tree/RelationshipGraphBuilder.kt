@@ -3,7 +3,8 @@ package app.grampsmaterial.feature_tree
 enum class TreeMode(val label: String) {
     ANCESTORS("Ancestors"),
     DESCENDANTS("Descendants"),
-    FLEX("Flex")
+    FLEX("Flex"),
+    RADIAL("Radial")
 }
 
 data class RelationshipGraph(
@@ -23,7 +24,7 @@ class RelationshipGraphBuilder {
         val adjacent: (String) -> List<String> = when (mode) {
             TreeMode.ANCESTORS -> parentsFor
             TreeMode.DESCENDANTS -> childrenFor
-            TreeMode.FLEX -> { handle -> (parentsFor(handle) + childrenFor(handle)).distinct() }
+            TreeMode.FLEX, TreeMode.RADIAL -> { handle -> (parentsFor(handle) + childrenFor(handle)).distinct() }
         }
         val seen = mutableSetOf(root)
         val levels = mutableListOf(listOf(root))
