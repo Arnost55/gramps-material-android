@@ -3,6 +3,7 @@ package app.grampsmaterial.feature_home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +26,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +46,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var customizing by remember { mutableStateOf(false) }
     val monthBirthdays = uiState.birthdays.filter { it.month == uiState.birthdayMonth }
     val monthName = java.time.Month.of(uiState.birthdayMonth).name.lowercase().replaceFirstChar(Char::titlecase)
 
@@ -61,6 +67,7 @@ fun HomeScreen(
                     )
                 }
             }
+            TextButton(onClick = { customizing = !customizing }) { Text("Customize") }
             Icon(
                 imageVector = Icons.Outlined.Settings,
                 contentDescription = "Settings",
@@ -70,7 +77,21 @@ fun HomeScreen(
             )
         }
 
-        ElevatedCard(
+        if (customizing) {
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Dashboard widgets", style = MaterialTheme.typography.titleMedium)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("tree" to "Tree", "home" to "Home person", "search" to "Search", "stats" to "Stats", "birthdays" to "Birthdays", "recent" to "Recent").forEach { (id, label) ->
+                            FilterChip(selected = id in uiState.widgets, onClick = { viewModel.toggleWidget(id) }, label = { Text(label) })
+                        }
+                    }
+                    FilterChip(selected = uiState.compact, onClick = { viewModel.setCompact(!uiState.compact) }, label = { Text("Compact cards") })
+                }
+            }
+        }
+
+        if ("tree" in uiState.widgets) ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.elevatedCardColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -111,7 +132,7 @@ fun HomeScreen(
             )
         }
 
-        uiState.homePerson?.let { person ->
+        if ("home" in uiState.widgets) uiState.homePerson?.let { person ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth().clickable { onPersonSelected(person.handle) },
                 colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -125,7 +146,7 @@ fun HomeScreen(
             }
         }
 
-        ElevatedCard(
+        if ("search" in uiState.widgets) ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onSearchClick)
@@ -147,7 +168,7 @@ fun HomeScreen(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        if ("stats" in uiState.widgets) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(
                 modifier = Modifier.weight(1f),
                 label = "People loaded",
@@ -162,7 +183,7 @@ fun HomeScreen(
             )
         }
 
-        ElevatedCard(
+        if ("birthdays" in uiState.widgets) ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
         ) {

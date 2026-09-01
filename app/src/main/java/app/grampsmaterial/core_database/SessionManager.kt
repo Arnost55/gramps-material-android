@@ -60,6 +60,8 @@ class SessionManager(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode") // "system", "light", "dark"
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
+        val HOME_WIDGETS = stringPreferencesKey("home_widgets")
+        val HOME_COMPACT = booleanPreferencesKey("home_compact")
     }
 
     // Keys for secure SharedPreferences
@@ -102,6 +104,8 @@ class SessionManager(private val context: Context) {
     val themeModeFlow: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.THEME_MODE] ?: "system" }
     val dynamicColorsFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.DYNAMIC_COLORS] ?: true }
     val amoledModeFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.AMOLED_MODE] ?: false }
+    val homeWidgetsFlow: Flow<Set<String>> = context.dataStore.data.map { (it[PreferencesKeys.HOME_WIDGETS] ?: "tree,home,search,stats,birthdays,recent").split(',').filter(String::isNotBlank).toSet() }
+    val homeCompactFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.HOME_COMPACT] ?: false }
 
     suspend fun saveServerUrl(url: String) {
         context.dataStore.edit { it[PreferencesKeys.SERVER_URL] = url }
@@ -140,6 +144,14 @@ class SessionManager(private val context: Context) {
 
     suspend fun setAmoledMode(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.AMOLED_MODE] = enabled }
+    }
+
+    suspend fun setHomeWidgets(widgets: Set<String>) {
+        context.dataStore.edit { it[PreferencesKeys.HOME_WIDGETS] = widgets.joinToString(",") }
+    }
+
+    suspend fun setHomeCompact(compact: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.HOME_COMPACT] = compact }
     }
 
     suspend fun logout() {

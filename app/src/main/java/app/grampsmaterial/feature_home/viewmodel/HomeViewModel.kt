@@ -35,6 +35,8 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(recentPeople = recent) }
             }
         }
+        viewModelScope.launch { sessionManager.homeWidgetsFlow.collect { widgets -> _uiState.update { it.copy(widgets = widgets) } } }
+        viewModelScope.launch { sessionManager.homeCompactFlow.collect { compact -> _uiState.update { it.copy(compact = compact) } } }
     }
 
     private fun loadState() {
@@ -77,6 +79,14 @@ class HomeViewModel @Inject constructor(
         loadState()
     }
 
+    fun toggleWidget(widget: String) = viewModelScope.launch {
+        val widgets = _uiState.value.widgets.toMutableSet()
+        if (!widgets.add(widget)) widgets.remove(widget)
+        sessionManager.setHomeWidgets(widgets)
+    }
+
+    fun setCompact(compact: Boolean) = viewModelScope.launch { sessionManager.setHomeCompact(compact) }
+
     fun setBirthdayMonth(month: Int) {
         _uiState.update { it.copy(birthdayMonth = month.coerceIn(1, 12)) }
     }
@@ -98,6 +108,8 @@ class HomeViewModel @Inject constructor(
         val birthdays: List<Birthday> = emptyList(),
         val birthdayMonth: Int = java.time.LocalDate.now().monthValue,
         val isUsingCachedData: Boolean = false,
-        val recentPeople: List<RecentPersonEntity> = emptyList()
+        val recentPeople: List<RecentPersonEntity> = emptyList(),
+        val widgets: Set<String> = setOf("tree", "home", "search", "stats", "birthdays", "recent"),
+        val compact: Boolean = false
     )
 }
