@@ -49,11 +49,12 @@ fun HomeScreen(
     var customizing by remember { mutableStateOf(false) }
     val monthBirthdays = uiState.birthdays.filter { it.month == uiState.birthdayMonth }
     val monthName = java.time.Month.of(uiState.birthdayMonth).name.lowercase().replaceFirstChar(Char::titlecase)
+    val dashboardPadding = if (uiState.compact) 8.dp else 16.dp
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(dashboardPadding),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
