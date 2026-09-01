@@ -95,6 +95,18 @@ interface GrampsApiService {
     ): GrampsNote
 
     @GET("api/people/{handle}")
+    suspend fun getPersonRaw(
+        @Path("handle") handle: String,
+        @Query("profile") profile: String = "all"
+    ): kotlinx.serialization.json.JsonObject
+
+    @PUT("api/people/{handle}")
+    suspend fun updatePersonRaw(
+        @Path("handle") handle: String,
+        @Body person: kotlinx.serialization.json.JsonObject
+    ): Response<Unit>
+
+    @GET("api/people/{handle}")
     suspend fun getPerson(
         @Path("handle") handle: String,
         @Query("profile") profile: String = "all"

@@ -21,11 +21,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -51,7 +55,15 @@ fun PersonProfileScreen(
     viewModel: PersonProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var editFirstName by remember { mutableStateOf("") }
+    var editSurname by remember { mutableStateOf("") }
     LaunchedEffect(personHandle) { viewModel.loadPerson(personHandle) }
+    LaunchedEffect(state.person?.handle) {
+        state.person?.let { person ->
+            editFirstName = person.primary_name?.first_name.orEmpty()
+            editSurname = person.primary_name?.surname_list?.firstOrNull()?.surname.orEmpty()
+        }
+    }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "Back") }
@@ -83,6 +95,13 @@ fun PersonProfileScreen(
                         }
                         state.notice?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error) }
                         if (state.isStale) Text("Offline — showing cached data", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+                Section("Edit person") {
+                    OutlinedTextField(editFirstName, { editFirstName = it }, label = { Text("First name") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(editSurname, { editSurname = it }, label = { Text("Surname") }, modifier = Modifier.fillMaxWidth())
+                    Button(onClick = { viewModel.updateName(editFirstName, editSurname) }, enabled = !state.isSaving) {
+                        Text(if (state.isSaving) "Saving…" else "Save name")
                     }
                 }
                 RelationshipSection("Parents", state.relationships.parents, onPersonSelected)

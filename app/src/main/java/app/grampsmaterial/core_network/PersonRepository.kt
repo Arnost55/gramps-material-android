@@ -5,6 +5,9 @@ import app.grampsmaterial.core_database.RecentPersonEntity
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.models.displayName
 import app.grampsmaterial.core_network.models.lifeYears
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -68,6 +71,23 @@ class PersonRepository @Inject constructor(
     suspend fun getPersonTimeline(handle: String) = api().getPersonTimeline(handle)
 
     suspend fun getDnaMatches(handle: String) = api().getDnaMatches(handle)
+
+    /** Updates just the primary name while preserving all unknown server fields. */
+    suspend fun updatePersonName(handle: String, firstName: String, surname: String): GrampsPerson {
+        val service = api()
+        val raw = service.getPersonRaw(handle)
+        val name = (raw["primary_name"] as? JsonObject)?.toMutableMap() ?: mutableMapOf()
+        name["first_name"] = JsonPrimitive(firstName)
+        name["surname_list"] = JsonArray(listOf(JsonObject(mapOf("surname" to JsonPrimitive(surname)))))
+        // `profile` is a read-only API projection and must not be sent back on PUT.
+        val updated = JsonObject(raw.toMutableMap().apply {
+            remove("profile")
+            put("primary_name", JsonObject(name))
+        })
+        val response = service.updatePersonRaw(handle, updated)
+        if (!response.isSuccessful) throw IllegalStateException("Could not save person changes")
+        return getPersonFromNetwork(handle)
+    }
 
     suspend fun getCitation(handle: String) = api().getCitation(handle)
 

@@ -73,6 +73,17 @@ class PersonProfileViewModel @Inject constructor(
         }
     }
 
+    fun updateName(firstName: String, surname: String) = viewModelScope.launch {
+        val person = _uiState.value.person ?: return@launch
+        _uiState.update { it.copy(isSaving = true, notice = null) }
+        try {
+            val updated = personRepository.updatePersonName(person.handle, firstName.trim(), surname.trim())
+            _uiState.update { it.copy(person = updated, isSaving = false, notice = "Changes saved") }
+        } catch (_: Exception) {
+            _uiState.update { it.copy(isSaving = false, notice = "Could not save changes. Your original record was not modified.") }
+        }
+    }
+
     fun toggleBookmark() = viewModelScope.launch {
         val person = _uiState.value.person ?: return@launch
         val target = !_uiState.value.isBookmarked
@@ -144,6 +155,7 @@ class PersonProfileViewModel @Inject constructor(
 
     data class UiState(
         val isLoading: Boolean = false,
+        val isSaving: Boolean = false,
         val isStale: Boolean = false,
         val error: String? = null,
         val person: GrampsPerson? = null,
