@@ -67,6 +67,8 @@ class PersonRepository @Inject constructor(
 
     suspend fun getPersonTimeline(handle: String) = api().getPersonTimeline(handle)
 
+    suspend fun getDnaMatches(handle: String) = api().getDnaMatches(handle)
+
     suspend fun getCitation(handle: String) = api().getCitation(handle)
 
     suspend fun getSource(handle: String) = api().getSource(handle)

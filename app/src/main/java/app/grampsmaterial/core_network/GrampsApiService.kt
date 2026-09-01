@@ -56,6 +56,9 @@ interface GrampsApiService {
         @Path("handle2") handle2: String
     ): Relationship
 
+    @GET("api/people/{handle}/dna/matches")
+    suspend fun getDnaMatches(@Path("handle") handle: String): List<DnaMatch>
+
     @GET("api/people/{handle}/timeline")
     suspend fun getPersonTimeline(
         @Path("handle") handle: String,

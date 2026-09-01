@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.PersonRepository
+import app.grampsmaterial.core_network.models.DnaMatch
 import app.grampsmaterial.core_network.models.GrampsPerson
 import app.grampsmaterial.core_network.models.TimelineEvent
 import app.grampsmaterial.core_network.models.displayName
@@ -41,6 +42,7 @@ class PersonProfileViewModel @Inject constructor(
                 val isBookmarked = runCatching { personRepository.getPeopleBookmarks().contains(person.handle) }.getOrDefault(false)
                 val timeline = runCatching { personRepository.getPersonTimeline(person.handle) }.getOrDefault(emptyList())
                 val research = runCatching { loadResearch(person) }.getOrDefault(emptyList())
+                val dnaMatches = runCatching { personRepository.getDnaMatches(person.handle) }.getOrDefault(emptyList())
                 val media = person.media_list.take(12).map { ref ->
                     MediaPreview(
                         handle = ref.ref,
@@ -59,6 +61,7 @@ class PersonProfileViewModel @Inject constructor(
                     relationshipToHome = relationshipToHome,
                     timeline = timeline,
                     research = research,
+                    dnaMatches = dnaMatches,
                     media = media
                 )
             } catch (_: Exception) {
@@ -150,6 +153,7 @@ class PersonProfileViewModel @Inject constructor(
         val relationshipToHome: String? = null,
         val timeline: List<TimelineEvent> = emptyList(),
         val research: List<ResearchEntry> = emptyList(),
+        val dnaMatches: List<DnaMatch> = emptyList(),
         val media: List<MediaPreview> = emptyList(),
         val notice: String? = null
     )

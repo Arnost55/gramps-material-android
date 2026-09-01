@@ -160,6 +160,14 @@ data class ChildRef(
 )
 
 @Serializable
+data class DnaMatch(
+    val handle: String? = null,
+    val relation: String? = null,
+    val ancestor_handles: List<String> = emptyList(),
+    val raw_data: List<String> = emptyList()
+)
+
+@Serializable
 data class GrampsReport(
     val id: String,
     val name: String? = null,

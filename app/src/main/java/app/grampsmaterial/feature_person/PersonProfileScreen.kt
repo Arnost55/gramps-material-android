@@ -99,6 +99,13 @@ fun PersonProfileScreen(
                         Text(listOfNotNull(event.date, event.type, event.description, event.place_name ?: event.place).joinToString(" · "))
                     }
                 }
+                Section("DNA matches") {
+                    if (state.dnaMatches.isEmpty()) Text("No DNA matches were returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else state.dnaMatches.forEach { match ->
+                        Text(match.relation ?: "DNA match", style = MaterialTheme.typography.bodyLarge)
+                        if (match.ancestor_handles.isNotEmpty()) Text("${match.ancestor_handles.size} common ancestor record(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Section("Media") {
                     if (state.media.isEmpty()) Text("No media was returned for this person.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
