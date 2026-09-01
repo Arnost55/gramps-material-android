@@ -77,7 +77,7 @@ class PersonProfileViewModel @Inject constructor(
         val person = _uiState.value.person ?: return@launch
         _uiState.update { it.copy(isSaving = true, notice = null) }
         try {
-            val updated = personRepository.updatePersonName(person.handle, firstName.trim(), surname.trim())
+            val updated = personRepository.savePersonName(person.handle, firstName.trim(), surname.trim())
             _uiState.update { it.copy(person = updated, isSaving = false, notice = "Changes saved") }
         } catch (_: Exception) {
             _uiState.update { it.copy(isSaving = false, notice = "Could not save changes. Your original record was not modified.") }

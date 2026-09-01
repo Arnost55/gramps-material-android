@@ -34,6 +34,7 @@ class PeopleCacheWorker(
         }
         return try {
             dependencies.personRepository().apply {
+                flushPendingPersonNameMutations()
                 loadAllPeopleFromNetwork()
                 loadAllFamiliesFromNetwork()
             }

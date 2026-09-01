@@ -7,11 +7,12 @@ import app.grampsmaterial.core_network.models.GrampsFamily
 import app.grampsmaterial.core_network.models.GrampsPerson
 import app.grampsmaterial.core_network.models.GrampsTree
 
-@Database(entities = [GrampsPerson::class, GrampsFamily::class, GrampsTree::class, RecentPersonEntity::class], version = 3, exportSchema = false)
+@Database(entities = [GrampsPerson::class, GrampsFamily::class, GrampsTree::class, RecentPersonEntity::class, PendingPersonNameMutationEntity::class], version = 4, exportSchema = false)
 @TypeConverters(GrampsTypeConverters::class)
 abstract class GrampsDatabase : RoomDatabase() {
     abstract fun personDao(): PersonDao
     abstract fun familyDao(): FamilyDao
     abstract fun treeDao(): TreeDao
     abstract fun recentPeopleDao(): RecentPeopleDao
+    abstract fun pendingMutationDao(): PendingMutationDao
 }

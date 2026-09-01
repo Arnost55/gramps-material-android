@@ -1,6 +1,7 @@
 package app.grampsmaterial.core_network
 
 import app.grampsmaterial.core_database.GrampsDatabaseProvider
+import app.grampsmaterial.core_database.PendingPersonNameMutationEntity
 import app.grampsmaterial.core_database.RecentPersonEntity
 import app.grampsmaterial.core_database.SessionManager
 import app.grampsmaterial.core_network.models.displayName
@@ -12,8 +13,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import app.grampsmaterial.core_network.models.GrampsFamily
+import app.grampsmaterial.core_network.models.GrampsName
+import app.grampsmaterial.core_network.models.GrampsSurname
 import app.grampsmaterial.core_network.models.GrampsPerson
 import app.grampsmaterial.core_network.models.SearchResult
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -87,6 +91,24 @@ class PersonRepository @Inject constructor(
         val response = service.updatePersonRaw(handle, updated)
         if (!response.isSuccessful) throw IllegalStateException("Could not save person changes")
         return getPersonFromNetwork(handle)
+    }
+
+    /** Saves immediately when online; otherwise queues only network failures for retry. */
+    suspend fun savePersonName(handle: String, firstName: String, surname: String): GrampsPerson {
+        return try {
+            updatePersonName(handle, firstName, surname)
+        } catch (error: IOException) {
+            dbProvider.pendingMutationDao.insert(PendingPersonNameMutationEntity(handle = handle, firstName = firstName, surname = surname))
+            val cached = requireNotNull(getCachedPerson(handle)) { "Person is not cached" }
+            cached.copy(primary_name = GrampsName(first_name = firstName, surname_list = listOf(GrampsSurname(surname = surname)))).also { cachePerson(it) }
+        }
+    }
+
+    suspend fun flushPendingPersonNameMutations() {
+        dbProvider.pendingMutationDao.getAll().forEach { mutation ->
+            updatePersonName(mutation.handle, mutation.firstName, mutation.surname)
+            dbProvider.pendingMutationDao.delete(mutation.id)
+        }
     }
 
     suspend fun getCitation(handle: String) = api().getCitation(handle)
