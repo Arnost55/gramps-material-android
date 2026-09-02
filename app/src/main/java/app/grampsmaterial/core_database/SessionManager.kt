@@ -20,6 +20,29 @@ private const val TAG = "SessionManager"
 private const val SECURE_PREFS_FILE = "secure_gramps_prefs"
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "gramps_settings")
 
+sealed interface AuthState {
+    data object Unknown : AuthState
+    data object SignedOut : AuthState
+    data object SignedIn : AuthState
+    data object SessionExpired : AuthState
+
+    val storageValue: String get() = when (this) {
+        Unknown -> "unknown"
+        SignedOut -> "signed_out"
+        SignedIn -> "signed_in"
+        SessionExpired -> "session_expired"
+    }
+
+    companion object {
+        fun fromStorage(value: String?): AuthState = when (value) {
+            "signed_out" -> SignedOut
+            "signed_in" -> SignedIn
+            "session_expired" -> SessionExpired
+            else -> Unknown
+        }
+    }
+}
+
 class SessionManager(private val context: Context) {
 
     private val masterKey: MasterKey by lazy {
@@ -56,7 +79,7 @@ class SessionManager(private val context: Context) {
         val SELECTED_TREE_NAME = stringPreferencesKey("selected_tree_name")
         val HOME_PERSON_HANDLE = stringPreferencesKey("home_person_handle")
         val ALLOW_INSECURE_HTTP = booleanPreferencesKey("allow_insecure_http")
-        val IS_CONNECTED = booleanPreferencesKey("is_connected")
+        val AUTH_STATE = stringPreferencesKey("auth_state")
         val THEME_MODE = stringPreferencesKey("theme_mode") // "system", "light", "dark"
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
@@ -71,7 +94,7 @@ class SessionManager(private val context: Context) {
     }
 
     // Secure token APIs
-    fun saveTokens(accessToken: String, refreshToken: String?) {
+    suspend fun saveTokens(accessToken: String, refreshToken: String?) {
         securePrefs.edit().apply {
             putString(SecureKeys.ACCESS_TOKEN, accessToken)
             if (refreshToken != null) {
@@ -79,6 +102,7 @@ class SessionManager(private val context: Context) {
             }
             apply()
         }
+        context.dataStore.edit { it[PreferencesKeys.AUTH_STATE] = AuthState.SignedIn.storageValue }
     }
 
     fun getAccessToken(): String? = securePrefs.getString(SecureKeys.ACCESS_TOKEN, null)
@@ -100,7 +124,7 @@ class SessionManager(private val context: Context) {
     val selectedTreeNameFlow: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.SELECTED_TREE_NAME] ?: "" }
     val homePersonHandleFlow: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.HOME_PERSON_HANDLE] ?: "" }
     val allowInsecureHttpFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.ALLOW_INSECURE_HTTP] ?: false }
-    val isConnectedFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.IS_CONNECTED] ?: false }
+    val authStateFlow: Flow<AuthState> = context.dataStore.data.map { AuthState.fromStorage(it[PreferencesKeys.AUTH_STATE]) }
     val themeModeFlow: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.THEME_MODE] ?: "system" }
     val dynamicColorsFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.DYNAMIC_COLORS] ?: true }
     val amoledModeFlow: Flow<Boolean> = context.dataStore.data.map { it[PreferencesKeys.AMOLED_MODE] ?: false }
@@ -130,8 +154,9 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { it[PreferencesKeys.ALLOW_INSECURE_HTTP] = allow }
     }
 
-    suspend fun setConnected(connected: Boolean) {
-        context.dataStore.edit { it[PreferencesKeys.IS_CONNECTED] = connected }
+    suspend fun markSessionExpired() {
+        clearTokens()
+        context.dataStore.edit { it[PreferencesKeys.AUTH_STATE] = AuthState.SessionExpired.storageValue }
     }
 
     suspend fun setThemeMode(mode: String) {
@@ -157,7 +182,7 @@ class SessionManager(private val context: Context) {
     suspend fun logout() {
         clearTokens()
         context.dataStore.edit {
-            it[PreferencesKeys.IS_CONNECTED] = false
+            it[PreferencesKeys.AUTH_STATE] = AuthState.SignedOut.storageValue
             it[PreferencesKeys.SELECTED_TREE_ID] = ""
             it[PreferencesKeys.SELECTED_TREE_NAME] = ""
             it[PreferencesKeys.HOME_PERSON_HANDLE] = ""

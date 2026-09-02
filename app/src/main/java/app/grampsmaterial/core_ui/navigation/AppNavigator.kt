@@ -54,9 +54,9 @@ fun AppNavigator(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    LaunchedEffect(sessionState.isLoading, sessionState.isConnected, sessionState.hasSelectedTree) {
+    LaunchedEffect(sessionState.isLoading, sessionState.isAuthenticated, sessionState.hasSelectedTree) {
         if (sessionState.isLoading) return@LaunchedEffect
-        val destination = if (sessionState.isConnected) {
+        val destination = if (sessionState.isAuthenticated) {
             if (sessionState.hasSelectedTree) NavDestination.Home.route else NavDestination.TreeSelection.route
         } else {
             NavDestination.Welcome.route

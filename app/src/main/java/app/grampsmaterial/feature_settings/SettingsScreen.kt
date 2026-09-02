@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.grampsmaterial.core_ui.theme.GrampsMaterialTheme
 import app.grampsmaterial.feature_settings.viewmodel.SettingsViewModel
+import app.grampsmaterial.core_database.AuthState
+import app.grampsmaterial.core_network.NetworkState
+import app.grampsmaterial.core_network.ServerReachability
+import java.time.Duration
+import java.time.Instant
 import app.grampsmaterial.feature_settings.viewmodel.ThemeViewModel
 
 @Composable
@@ -108,11 +113,12 @@ fun SettingsScreen(
         }
         Spacer(modifier = Modifier.height(12.dp))
         
-        Text(
-            text = "Status: ${if (uiState.isConnected) "Connected" else "Disconnected"}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (uiState.isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-        )
+        Text("Network: ${uiState.networkState.label()}", style = MaterialTheme.typography.bodyMedium)
+        Text("Status: ${uiState.reachability.label()}", style = MaterialTheme.typography.bodyMedium)
+        Text("Session: ${uiState.authState.label()}", style = MaterialTheme.typography.bodyMedium)
+        if (uiState.treeName.isNotBlank()) Text("Tree: ${uiState.treeName}", style = MaterialTheme.typography.bodyMedium)
+        Text("Last checked: ${uiState.reachability.lastCheckedLabel()}", style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = settingsViewModel::retryServerCheck) { Text("Check server") }
         Spacer(modifier = Modifier.height(24.dp))
         
         // Appearance Section
@@ -209,3 +215,32 @@ fun SettingsScreenPreviewWrapper() {
         SettingsScreen(onBack = {}, onEditServer = {}, onLogout = {})
     }
 }
+
+
+private fun NetworkState.label() = when (this) {
+    NetworkState.Online -> "Online"
+    NetworkState.Offline -> "Offline"
+    NetworkState.Unknown -> "Unknown"
+}
+
+private fun AuthState.label() = when (this) {
+    AuthState.SignedIn -> "Signed in"
+    AuthState.SignedOut -> "Signed out"
+    AuthState.SessionExpired -> "Session expired"
+    AuthState.Unknown -> "Unknown"
+}
+
+private fun ServerReachability.label() = when (this) {
+    is ServerReachability.Reachable -> "Server reachable"
+    is ServerReachability.Unreachable -> "Server unavailable"
+    ServerReachability.Checking -> "Checking server…"
+    ServerReachability.Unknown -> "Not checked"
+}
+
+private fun ServerReachability.lastCheckedLabel(): String = when (this) {
+    is ServerReachability.Reachable -> checkedAt.relativeLabel()
+    is ServerReachability.Unreachable -> checkedAt.relativeLabel()
+    else -> "Not yet"
+}
+
+private fun Instant.relativeLabel(): String = if (Duration.between(this, Instant.now()).seconds < 60) "Just now" else "Earlier"

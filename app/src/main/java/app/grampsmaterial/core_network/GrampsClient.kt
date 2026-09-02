@@ -18,7 +18,10 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 private const val TAG = "GrampsClient"
 
-class GrampsClient(private val sessionManager: SessionManager) {
+class GrampsClient(
+    private val sessionManager: SessionManager,
+    private val reachabilityTracker: ServerReachabilityTracker
+) {
 
     private var serverUrl: String = ""
     private var allowInsecureHttp: Boolean = false
@@ -71,12 +74,19 @@ class GrampsClient(private val sessionManager: SessionManager) {
                     builder.header("Authorization", "Bearer $token")
                 }
             }
-            chain.proceed(builder.build()).also { response ->
-                if (response.code == 401 && !isTokenRequest) {
-                    // DataStore cannot be updated on OkHttp's thread. Clearing the session makes
-                    // the navigator return to onboarding instead of leaving stale auth state alive.
-                    CoroutineScope(Dispatchers.IO).launch { sessionManager.logout() }
+            try {
+                chain.proceed(builder.build()).also { response ->
+                    // Any HTTP response proves the configured host responded. Its status still
+                    // determines auth/API handling independently from reachability.
+                    reachabilityTracker.reachable()
+                    if (classifyHttpOutcome(response.code) == HttpOutcome.AuthenticationFailure && !isTokenRequest) {
+                        // A rejected token is an authentication failure, not a connectivity failure.
+                        CoroutineScope(Dispatchers.IO).launch { sessionManager.markSessionExpired() }
+                    }
                 }
+            } catch (error: java.io.IOException) {
+                reachabilityTracker.recordFailure(error)
+                throw error
             }
         }
 

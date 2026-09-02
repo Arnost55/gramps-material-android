@@ -1,95 +1,90 @@
 package app.grampsmaterial.feature_settings.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.BuildConfig
+import app.grampsmaterial.core_database.AuthState
 import app.grampsmaterial.core_database.SessionManager
+import app.grampsmaterial.core_network.AuthRepository
+import app.grampsmaterial.core_network.NetworkState
+import app.grampsmaterial.core_network.NetworkStateMonitor
 import app.grampsmaterial.core_network.PersonRepository
+import app.grampsmaterial.core_network.ServerReachability
+import app.grampsmaterial.core_network.ServerReachabilityTracker
+import app.grampsmaterial.core_network.ServerReadiness
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import dagger.hilt.android.lifecycle.HiltViewModel
-
-private const val TAG = "SettingsViewModel"
 
 @HiltViewModel
-open class SettingsViewModel @Inject constructor(
+class SettingsViewModel @Inject constructor(
     private val sessionManager: SessionManager,
-    private val personRepository: PersonRepository
+    private val personRepository: PersonRepository,
+    private val authRepository: AuthRepository,
+    private val networkStateMonitor: NetworkStateMonitor,
+    private val reachabilityTracker: ServerReachabilityTracker
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(UiState())
-    open val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
-        loadState()
-    }
-
-    private fun loadState() {
         viewModelScope.launch {
-            try {
-                val serverUrl = sessionManager.serverUrlFlow.first()
-                val isConnected = sessionManager.isConnectedFlow.first()
-                val themeMode = sessionManager.themeModeFlow.first()
-                val isDarkMode = when (themeMode) {
-                    "dark" -> true
-                    else -> false
-                }
-                val useDynamicColors = sessionManager.dynamicColorsFlow.first()
-                val useAmoledOptimization = sessionManager.amoledModeFlow.first()
-                
-                _uiState.update { it.copy(
+            combine(
+                sessionManager.serverUrlFlow,
+                sessionManager.selectedTreeNameFlow,
+                sessionManager.authStateFlow,
+                networkStateMonitor.state,
+                reachabilityTracker.state
+            ) { serverUrl, treeName, authState, networkState, reachability ->
+                UiState(
                     serverUrl = serverUrl,
-                    isConnected = isConnected,
-                    isDarkMode = isDarkMode,
-                    useDynamicColors = useDynamicColors,
-                    useAmoledOptimization = useAmoledOptimization,
-                    cachedPeopleCount = personRepository.getCachedPersonCount(),
+                    treeName = treeName,
+                    authState = authState,
+                    networkState = networkState,
+                    reachability = reachability,
                     appVersion = BuildConfig.VERSION_NAME
-                ) }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading settings state", e)
+                )
+            }.collect { state ->
+                _uiState.value = state.copy(cachedPeopleCount = personRepository.getCachedPersonCount())
             }
         }
     }
 
-    open fun logout() {
-        viewModelScope.launch {
-            try {
-                personRepository.clearCache()
-                sessionManager.logout()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during logout", e)
-            }
+    fun retryServerCheck() = viewModelScope.launch {
+        val url = sessionManager.serverUrlFlow.first()
+        if (url.isBlank() || networkStateMonitor.state.value == NetworkState.Offline) return@launch
+        reachabilityTracker.checking()
+        when (authRepository.verifyConnection(url, sessionManager.allowInsecureHttpFlow.first())) {
+            ServerReadiness.Ready -> reachabilityTracker.reachable()
+            ServerReadiness.Unreachable -> Unit
+            ServerReadiness.TlsFailure -> Unit
+            is ServerReadiness.Unsupported -> Unit
         }
     }
 
-    open fun clearCache() {
-        viewModelScope.launch {
-            try {
-                personRepository.clearCache()
-                loadState()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error clearing cache", e)
-            }
-        }
+    fun logout() = viewModelScope.launch {
+        personRepository.clearCache()
+        sessionManager.logout()
     }
 
-    open fun refresh() {        loadState()
+    fun clearCache() = viewModelScope.launch {
+        personRepository.clearCache()
+        _uiState.update { it.copy(cachedPeopleCount = 0) }
     }
 
     data class UiState(
         val serverUrl: String = "",
-        val isConnected: Boolean = false,
-        val isDarkMode: Boolean = false,
-        val useDynamicColors: Boolean = false,
-        val useAmoledOptimization: Boolean = false,
+        val treeName: String = "",
+        val authState: AuthState = AuthState.Unknown,
+        val networkState: NetworkState = NetworkState.Unknown,
+        val reachability: ServerReachability = ServerReachability.Unknown,
         val cachedPeopleCount: Int = 0,
-        val appVersion: String = "0.1.0"
+        val appVersion: String = ""
     )
 }

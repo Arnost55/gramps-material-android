@@ -11,11 +11,6 @@ interface GrampsApiService {
         @Body request: TokenRequest
     ): Response<TokenResponse>
 
-    @GET("api/metadata/")
-    suspend fun getMetadata(
-        @Query("surnames") includeSurnames: Boolean = false
-    ): MetadataResponse
-
     @GET("api/trees/")
     suspend fun getTrees(): List<GrampsTree>
 
@@ -125,6 +120,4 @@ interface GrampsApiService {
         @Query("profile") profile: String = "all"
     ): GrampsFamily
 
-    @GET("api/oidc/config")
-    suspend fun getOidcConfig(): Response<Unit> // simple connection test
 }

@@ -169,10 +169,6 @@ class PersonRepository @Inject constructor(
         dbProvider.personDao.insertPerson(person)
     }
 
-    suspend fun cachePeople(vararg people: GrampsPerson) {
-        dbProvider.personDao.insertAllPeople(*people)
-    }
-
     suspend fun getAllCachedPeople(): List<GrampsPerson> = dbProvider.personDao.getAllPeople()
 
     suspend fun getCachedPersonCount(): Int = dbProvider.personDao.getPersonCount()

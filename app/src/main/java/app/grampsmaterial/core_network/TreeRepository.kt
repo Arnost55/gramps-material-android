@@ -46,5 +46,4 @@ class TreeRepository @Inject constructor(
     }
 
     suspend fun getSelectedTreeId(): String = sessionManager.selectedTreeIdFlow.first()
-    suspend fun getSelectedTreeName(): String = sessionManager.selectedTreeNameFlow.first()
 }

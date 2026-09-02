@@ -2,6 +2,10 @@
 
 **Gramps Material** is an unofficial, native Android client for Gramps Web, built with Kotlin, Jetpack Compose, and Material 3. It is not affiliated with the Gramps project.
 
+## Gramps Material Alpha 1.0
+
+This is an early testing release intended primarily for browsing. Bugs are expected; back up important Gramps data before using any editing feature.
+
 ## Current features
 
 - Connect to a Gramps Web server and verify `GET /ready`
@@ -59,7 +63,7 @@ Compose UI → ViewModels → Repositories → Gramps Web / Room
 
 ## Privacy and security
 
-This client communicates directly with the Gramps Web server you configure. Do not use an untrusted HTTP server. The app does not store passwords, does not disable TLS validation, and should not log tokens or authorization headers.
+This client communicates directly with only the Gramps Web server you configure. It includes no analytics. Family data and caches stay app-private, while access and refresh tokens are removed on logout. Do not use an untrusted HTTP server. The app does not store passwords, does not disable TLS validation, and does not log tokens or authorization headers in release builds.
 
 ## License
 

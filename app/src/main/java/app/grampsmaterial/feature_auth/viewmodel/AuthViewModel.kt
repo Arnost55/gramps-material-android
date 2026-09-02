@@ -63,7 +63,6 @@ class AuthViewModel @Inject constructor(
                 sessionManager.saveServerUrl(normalized)
                 sessionManager.saveUsername(username.trim())
                 authRepository.saveTokens(token.access_token, token.refresh_token)
-                sessionManager.setConnected(true)
                 peopleCacheScheduler.enqueueRefresh()
                 _uiState.update { it.copy(isLoading = false) }
                 _authSuccess.value = true

@@ -7,6 +7,7 @@ import app.grampsmaterial.core_network.AuthRepository
 import app.grampsmaterial.core_network.GrampsApiService
 import app.grampsmaterial.core_network.GrampsClient
 import app.grampsmaterial.core_network.PersonRepository
+import app.grampsmaterial.core_network.ServerReachabilityTracker
 import app.grampsmaterial.core_network.TreeRepository
 import dagger.Module
 import dagger.Provides
@@ -38,7 +39,8 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = if (app.grampsmaterial.BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
+            redactHeader("Authorization")
         }
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
@@ -72,19 +74,17 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideGrampsClient(
-        sessionManager: SessionManager
-    ): GrampsClient {
-        return GrampsClient(sessionManager)
-    }
+        sessionManager: SessionManager,
+        reachabilityTracker: ServerReachabilityTracker
+    ): GrampsClient = GrampsClient(sessionManager, reachabilityTracker)
 
     @Provides
     @Singleton
     fun provideAuthRepository(
         grampsClient: GrampsClient,
-        sessionManager: SessionManager
-    ): AuthRepository {
-        return AuthRepository(grampsClient, sessionManager)
-    }
+        sessionManager: SessionManager,
+        reachabilityTracker: ServerReachabilityTracker
+    ): AuthRepository = AuthRepository(grampsClient, sessionManager, reachabilityTracker)
 
     @Provides
     @Singleton

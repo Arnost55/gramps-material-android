@@ -3,6 +3,10 @@ package app.grampsmaterial.core_ui.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.grampsmaterial.core_database.SessionManager
+import app.grampsmaterial.core_database.AuthState
+import app.grampsmaterial.core_network.AuthRepository
+import app.grampsmaterial.core_network.NetworkState
+import app.grampsmaterial.core_network.NetworkStateMonitor
 import app.grampsmaterial.core_sync.PeopleCacheScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -15,7 +19,9 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     private val sessionManager: SessionManager,
-    private val peopleCacheScheduler: PeopleCacheScheduler
+    private val peopleCacheScheduler: PeopleCacheScheduler,
+    private val authRepository: AuthRepository,
+    private val networkStateMonitor: NetworkStateMonitor
 ) : ViewModel() {
     private val _state = MutableStateFlow(SessionState())
     val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -23,24 +29,37 @@ class SessionViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                sessionManager.isConnectedFlow,
+                sessionManager.authStateFlow,
+                sessionManager.serverUrlFlow,
+                sessionManager.allowInsecureHttpFlow,
+                networkStateMonitor.state
+            ) { authState, url, insecure, networkState -> arrayOf(authState, url, insecure, networkState) }
+                .collect { (authState, url, insecure, networkState) ->
+                    if (authState as AuthState == AuthState.SignedIn && (url as String).isNotBlank() && networkState == NetworkState.Online) {
+                        authRepository.verifyConnection(url as String, insecure as Boolean)
+                    }
+                }
+        }
+        viewModelScope.launch {
+            combine(
+                sessionManager.authStateFlow,
                 sessionManager.selectedTreeIdFlow
-            ) { isConnected, selectedTreeId ->
+            ) { authState, selectedTreeId ->
                 SessionState(
                     isLoading = false,
-                    isConnected = isConnected && !sessionManager.getAccessToken().isNullOrBlank(),
+                    isAuthenticated = authState == AuthState.SignedIn && !sessionManager.getAccessToken().isNullOrBlank(),
                     hasSelectedTree = selectedTreeId.isNotBlank()
                 )
             }.collect { state ->
                 _state.value = state
-                if (state.isConnected) peopleCacheScheduler.enqueueRefresh()
+                if (state.isAuthenticated) peopleCacheScheduler.enqueueRefresh()
             }
         }
     }
 
     data class SessionState(
         val isLoading: Boolean = true,
-        val isConnected: Boolean = false,
+        val isAuthenticated: Boolean = false,
         val hasSelectedTree: Boolean = false
     )
 }

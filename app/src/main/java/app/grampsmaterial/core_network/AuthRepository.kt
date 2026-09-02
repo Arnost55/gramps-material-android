@@ -20,7 +20,8 @@ sealed interface ServerReadiness {
 
 class AuthRepository(
     private val grampsClient: GrampsClient,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val reachabilityTracker: ServerReachabilityTracker
 ) {
     suspend fun login(
         serverUrl: String,
@@ -35,27 +36,28 @@ class AuthRepository(
         return requireNotNull(response.body()) { "Token endpoint returned an empty response body" }
     }
 
-    fun saveTokens(accessToken: String, refreshToken: String?) =
+    suspend fun saveTokens(accessToken: String, refreshToken: String?) =
         sessionManager.saveTokens(accessToken, refreshToken)
-
-    fun getAccessToken(): String? = sessionManager.getAccessToken()
-    fun getRefreshToken(): String? = sessionManager.getRefreshToken()
-    fun clearTokens() = sessionManager.clearTokens()
 
     suspend fun verifyConnection(
         serverUrl: String,
         allowInsecureHttp: Boolean = false
     ): ServerReadiness = try {
+        reachabilityTracker.checking()
         val response = grampsClient.getProbeApi(serverUrl, allowInsecureHttp).ready()
         if (BuildConfig.DEBUG) Log.d(TAG, "GET /ready status=${response.code()}")
         if (response.isSuccessful && response.body()?.status == "ready") {
+            reachabilityTracker.reachable()
             ServerReadiness.Ready
         } else {
+            reachabilityTracker.unreachable(ReachabilityFailure.Server)
             ServerReadiness.Unsupported(response.code())
         }
     } catch (_: SSLException) {
+        reachabilityTracker.unreachable(ReachabilityFailure.Tls)
         ServerReadiness.TlsFailure
-    } catch (_: IOException) {
+    } catch (error: IOException) {
+        reachabilityTracker.recordFailure(error)
         ServerReadiness.Unreachable
     }
 }

@@ -28,28 +28,6 @@ data class GrampsTree(
 )
 
 @Serializable
-data class DatabaseInfo(
-    val name: String? = null,
-    val type: String? = null
-)
-
-@Serializable
-data class ObjectCounts(
-    val people: Int = 0,
-    val families: Int = 0,
-    val events: Int = 0,
-    val places: Int = 0,
-    val media: Int = 0
-)
-
-@Serializable
-data class MetadataResponse(
-    val database: DatabaseInfo? = null,
-    val default_person: String? = null,
-    val object_counts: ObjectCounts? = null
-)
-
-@Serializable
 data class GrampsSurname(
     val surname: String? = null,
     val prefix: String? = null,

@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import app.grampsmaterial.core_network.models.GrampsPerson
 
 @Dao
@@ -23,12 +22,6 @@ interface PersonDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllPeople(vararg people: GrampsPerson): LongArray
-
-    @Update
-    suspend fun updatePerson(person: GrampsPerson): Int
-
-    @Query("DELETE FROM people WHERE handle = :handle")
-    suspend fun deletePerson(handle: String): Int
 
     @Query("DELETE FROM people")
     suspend fun deleteAllPeople(): Int

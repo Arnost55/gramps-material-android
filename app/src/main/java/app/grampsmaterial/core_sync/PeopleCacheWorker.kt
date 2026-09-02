@@ -29,7 +29,7 @@ class PeopleCacheWorker(
             PeopleCacheWorkerEntryPoint::class.java
         )
         val sessionManager = dependencies.sessionManager()
-        if (!sessionManager.isConnectedFlow.first() || sessionManager.getAccessToken().isNullOrBlank()) {
+        if (sessionManager.getAccessToken().isNullOrBlank()) {
             return Result.success()
         }
         return try {
